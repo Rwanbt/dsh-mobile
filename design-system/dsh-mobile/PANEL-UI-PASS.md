@@ -52,3 +52,9 @@ tokens calculés, géométrie DOM et captures.
 - Les **QR d'appairage / actions secondaires** sont repliés dans « Code QR d'appairage » (reste accessible au clic).
 - Mesures vérifiées à 1280×900 : vue LAN **718 px**, vue OpenTunnel **524 px**, scrollHeight <= clientHeight → **aucun scroll**. Sur une fenêtre très basse (< 800 px de haut), le panneau peut encore scroller quand les détails sont ouverts.
 - Captures : panel_compact_lan.png, panel_compact_methods.png, panel_compact_remote.png (dossier ork-artifacts/android/after/).
+
+## Correctif QR (20:50)
+- Cause réelle : le panneau avait overflow: hidden et la vue était un flex 1 1 0 contraint à ~612 px ; le contenu ouvert (787 px) débordait hors flux et passait sous la ligne « APK », sans possibilité de scroll. Le QR était donc coupé.
+- Correctif : overflow-y: auto sur le panneau, vues/colonnes/pane en lex: 0 0 auto (la hauteur suit le contenu), auto-ouverture du bloc « Code QR d'appairage » quand un QR est généré et scrollIntoView sur le QR ; ouverture manuelle des détails scrolle aussi dessus.
+- Vérifié avec un QR 192 px : entièrement visible (y 573→765 dans un panneau 28→788), panneau scrollable (934 px de contenu pour 758 px visibles), plus de chevauchement avec la section APK.
+- Capture : ork-artifacts/android/after/panel_qr_visible.png.

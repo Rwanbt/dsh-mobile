@@ -1874,6 +1874,15 @@ function installControl(): { remove: () => void; toggle: () => void; isOpen: () 
   const remotePairingDetails = element('details', 'dsh-mobile-control__pairing-details')
   const remotePairingSummary = element('summary'); remotePairingSummary.textContent = t('pairingQr')
   remotePairingDetails.append(remotePairingSummary, remoteQr, remotePairLink, pairingValidity)
+  remotePairingDetails.addEventListener('toggle', () => {
+    if (!remotePairingDetails.open) return
+    requestAnimationFrame(() => remotePairingDetails.scrollIntoView({ block: 'nearest', behavior: 'smooth' }))
+  })
+  new MutationObserver(() => {
+    if (remoteQr.querySelector('img') === null) return
+    if (!remotePairingDetails.open) remotePairingDetails.open = true
+    requestAnimationFrame(() => remoteQr.scrollIntoView({ block: 'nearest', behavior: 'smooth' }))
+  }).observe(remoteQr, { childList: true })
   remoteWorkspace.append(remoteStatus, remoteAccess, remoteGuide, remotePermission, providerSetupBody, providerInstallRow, remoteActions, remotePairingDetails, setupDetailsRow)
   const diagnosticsView = element('div', 'dsh-mobile-control__view is-diagnostics'); diagnosticsView.hidden = true
   // Paired-device management is its own page (like diagnostics), reached from the
@@ -1925,6 +1934,13 @@ function installControl(): { remove: () => void; toggle: () => void; isOpen: () 
   const lanPairingDetails = element('details', 'dsh-mobile-control__pairing-details')
   const lanPairingSummary = element('summary'); lanPairingSummary.textContent = t('pairingQr')
   lanPairingDetails.append(lanPairingSummary, qrBox, lanPairingValidity, actions)
+  lanPairingDetails.addEventListener('toggle', () => {
+    if (lanPairingDetails.open) requestAnimationFrame(() => lanPairingDetails.scrollIntoView({ block: 'nearest', behavior: 'smooth' }))
+  })
+  new MutationObserver(() => {
+    if (qrBox.querySelector('img') === null) return
+    requestAnimationFrame(() => qrBox.scrollIntoView({ block: 'nearest', behavior: 'smooth' }))
+  }).observe(qrBox, { childList: true })
   lanView.append(lanSetup, lanChange, access, lanPairingDetails, status, extensionStatus, trustedNetworks)
   // Two-column remote layout: the channel list on the left, its configuration on
   // the right, so switching providers no longer scrolls the setup out of view.
@@ -5823,7 +5839,10 @@ export const DSH_NATIVE_STYLES = `
   .dsh-mobile-control__view.is-remote .dsh-mobile-control__remote-workspace>.dsh-mobile-control__actions>button{flex-basis:100%}
 }
 /* Compact panel: one method combobox replaces the provider card column. */
-.dsh-mobile-control__remote-columns{display:flex;flex-direction:column;gap:12px}
+.dsh-mobile-control__remote-columns{display:flex;flex-direction:column;gap:12px;flex:0 0 auto!important}
+.dsh-mobile-control__panel>.dsh-mobile-control__view{flex:0 0 auto!important;min-height:0!important;height:auto!important}
+.dsh-mobile-control__channel-pane,.dsh-mobile-control__remote-workspace{flex:0 0 auto!important;min-height:0!important}
+.dsh-mobile-control__panel{overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain}
 .dsh-mobile-control__remote-columns>.dsh-mobile-control__provider-section{position:relative;order:1;width:100%;min-width:0;margin:0;height:auto!important;max-height:none!important;overflow:visible!important;padding-right:0!important}
 .dsh-mobile-control__remote-columns>.dsh-mobile-control__channel-pane{order:2;width:100%;min-width:0;max-height:none;overflow:visible;padding:0}
 .dsh-mobile-control__method-field{position:relative;display:flex;flex-direction:column;gap:6px;min-width:0}
