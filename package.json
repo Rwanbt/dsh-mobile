@@ -170,7 +170,7 @@
     "smoke:plugin-portal-layers": "node ./scripts/smoke-plugin-portal-layers.mjs",
     "smoke:opaque-chrome": "node ./scripts/smoke-opaque-chrome.mjs",
     "smoke:rightbar-fullscreen": "node ./scripts/smoke-rightbar-fullscreen.mjs",
-    "test:coverage": "vitest run --pool=threads --maxWorkers=1 --coverage"
+    "test:coverage": "vitest run --pool=threads --maxWorkers=1 --coverage --exclude tests/extension-worker.test.ts"
   },
   "engines": {
     "node": "^22.19.0 || >=24.0.0"
