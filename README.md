@@ -51,6 +51,27 @@ Notes :
 | **Linux x64 / arm64** | Audit statique des chemins multiplateformes et des tables d'artefacts (`caddy`, `cloudflared`, `cpolar`, `frp`, `iroh`) ; OpenTunnel est du JavaScript pur. La CI amont exécute la suite sur `ubuntu-latest`. Pas de test d'exécution propre à ce fork sur Linux. |
 | **macOS x64 / arm64** | Audit statique : OpenTunnel, LAN, cloudflared, FRP et proxy inverse sont multiplateformes. Les composants sans binaire macOS (Tailscale Funnel, cpolar, Caddy géré, iroh) sont explicitement marqués non pris en charge par le plugin. La CI amont n'exécute pas de job macOS : pas de test d'exécution propre à ce fork sur macOS. |
 
+## Qualité, tests et sécurité
+
+Audit réalisé sur cette version (Windows, suite complète) :
+
+| Indicateur | Résultat |
+| --- | --- |
+| Couverture globale (Vitest/V8) | **75,7 % lignes**, 71,2 % statements, 71,6 % fonctions, 66,7 % branches |
+| Modules sécurité critiques | `gateway.ts` **95,3 %** lignes, `control.ts` **92,5 %**, `private-file.ts` **88 %**, `origin-proxy.ts` **100 %**, `local-admin-host.ts` **100 %** |
+| OpenTunnel | **76,6 % lignes** / 56,2 % branches (tests ajoutés : SDK absent, conflit de route, URL non-HTTPS, prise d'origin et restauration) |
+| Dépendances | `npm audit` : **0 vulnérabilité** (runtime et dev) |
+| Secrets | aucun secret, clé privée ou `.env` dans les fichiers suivis ; seuls des jetons factices de tests existent |
+| Tests sécurité | 122 tests ciblés (auth, rate limits, contrôle, persistance) verts |
+
+```powershell
+npm test                 # suite complète
+npm run test:coverage    # rapport de couverture (fournisseur inclus)
+npm audit                # dépendances
+```
+
+Limites connues : la couverture du client DOM (`src/client.ts`, ~20 %) reste faible car les tests Node ne rendent qu'un faux DOM ; les modules hôte et sécurité sont, eux, couverts à plus de 88 %. Un test upstream de starvation de worker (`tests/extension-worker.test.ts`) est instable et échoue indépendamment de ce fork ; il est exclu du rapport de couverture de référence.
+
 ## Installation
 
 ### Prérequis

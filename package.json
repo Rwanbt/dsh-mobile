@@ -169,7 +169,8 @@
     "verify": "npm run check:version && npm run check:docs && npm run check:companion-package && npm run check:funnel-licenses && npm run check:mobile-release && npm run typecheck && npm run test && npm run build && npm pack --dry-run",
     "smoke:plugin-portal-layers": "node ./scripts/smoke-plugin-portal-layers.mjs",
     "smoke:opaque-chrome": "node ./scripts/smoke-opaque-chrome.mjs",
-    "smoke:rightbar-fullscreen": "node ./scripts/smoke-rightbar-fullscreen.mjs"
+    "smoke:rightbar-fullscreen": "node ./scripts/smoke-rightbar-fullscreen.mjs",
+    "test:coverage": "vitest run --pool=threads --maxWorkers=1 --coverage"
   },
   "engines": {
     "node": "^22.19.0 || >=24.0.0"
@@ -264,6 +265,7 @@
     "@types/react": "~19.3.0",
     "@types/web-push": "3.6.4",
     "@types/ws": "8.18.2",
+    "@vitest/coverage-v8": "5.0.5",
     "core-js": "^3.50.0",
     "js-yaml": "^5.4.2",
     "playwright": "1.64.1",

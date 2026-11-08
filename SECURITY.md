@@ -8,9 +8,9 @@ Security fixes target the newest stable release. Prereleases receive fixes only 
 
 ## Reporting a vulnerability
 
-Do not open a public issue for a suspected vulnerability. Use GitHub's private vulnerability-reporting form for `saya-ch/dsh-mobile`. Include the affected version, deployment topology, reproduction steps, and whether a device credential, session Cookie, or local access is required.
+Do not open a public issue for a suspected vulnerability. Use GitHub's private vulnerability-reporting form for **`Rwanbt/dsh-mobile`** (this fork), or contact the fork maintainer through the repository's Security tab. Include the affected version, deployment topology, reproduction steps, and whether a device credential, session Cookie, or local access is required. Issues that also affect the upstream project should be reported to **`saya-ch/dsh-mobile`**.
 
-The maintainer will acknowledge a complete report within seven days. Publication timing is coordinated with the reporter after a fix and a revocation or upgrade path are available.
+The maintained fork will acknowledge a complete report within seven days. Publication timing is coordinated with the reporter after a fix and a revocation or upgrade path are available.
 
 ## Deployment requirements
 
@@ -45,6 +45,14 @@ The maintainer will acknowledge a complete report within seven days. Publication
 - Plugin 0.6.8 reads device-state versions 1 and 2 and writes version 2 on the next mutation. New records retain an optional `nativeInstanceId` binding, so authenticated native renewal and probe return the identity used for their pairing. Older unbound records keep the gateway's legacy identity during an ordinary upgrade with the same state path and gateway configuration; moving their state or changing their certificate/operator identity is not covered by this preservation. They are not reassigned from discovery metadata. The native response fields remain unchanged and the published Android App 0.6.3 needs no update for this fix.
 - Stop the old Gateway normally before updating, then restart DSH. Do not run old and new plugins against the same state concurrently. Plugin 0.6.7 and earlier cannot read version 2; if downgrade may be necessary, stop DSH and back up the complete Mobile state directory before upgrading. There is no automatic rollback or data reset. Restoring a pre-upgrade backup is a separate operator action and can also restore credentials revoked since that backup: review and revoke those devices again before exposing the entry.
 - Working pairings do not need to be recreated. A credential already overwritten in the App cannot be reconstructed by the plugin; pair each affected computer again after updating. A usable legacy row may remain beside a new row at the same Origin. Remove a redundant local row only after confirming the new one works; the upgrade does not automatically delete local rows or revoke their computer-side credentials.
+
+### OpenTunnel / DSH Remote (fork addition)
+
+- OpenTunnel is an outbound TLS tunnel to the OpenTunnel relay. The computer never opens an inbound port for it and no OpenTunnel account is required; the public hostname should still be treated as public knowledge.
+- The relay identity and the origin-backup marker live under `$DSH_HOME/mobile-access/` (state directory created with private permissions). OpenTunnel never logs the pairing URL, relay credentials, or device tokens.
+- Enabling OpenTunnel writes a private origin configuration pointing at the relay URL and starts a loopback-only gateway. Disabling it stops both and restores the origin configuration saved before the first takeover; the backup is written through the plugin's private-file helper.
+- Gateway pairing, device tokens, CSRF/Host/Origin checks, revocation and rate budgets remain enforced exactly as for the other remote providers. The relay only carries transport; it does not authenticate DSH clients.
+- OpenTunnel uses the JavaScript SDK (`@opentunnel/client`, Node ≥ 22) and therefore has no platform-specific binary. Confirm the relay URL uses `https://`; non-HTTPS relay URLs are rejected.
 
 ### Remote components, diagnostics and cleanup
 
