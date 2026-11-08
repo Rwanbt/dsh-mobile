@@ -407,7 +407,7 @@ export const FR_MESSAGES: Readonly<Record<string, string>> = {
   "invalidResponse": "Le serveur a répondu avec un corps qui n’est pas un JSON valide. Confirmez que les versions du plugin et de DSH correspondent, puis rechargez la page.",
   "diagnostics": "Diagnostic",
   "openDiagnostics": "Diagnostic de connexion ouverte",
-  "back": "Dos",
+  "back": "Retour",
   "backToMobile": "Retour à Accès mobile",
   "connectionDiagnostics": "Diagnostic de connexion",
   "diagnosticsIntro": "Vérifiez les versions, la passerelle, la carte réseau, le pare-feu et le canal distant. Le rapport est automatiquement rédigé et ne lit jamais les conversations ou les informations d’identification.",
@@ -748,3 +748,4 @@ export const FR_LOCALIZED_DIAGNOSTIC_COPY = {
   "certificateUnknown": "Le certificat d’entrée FRP n’a pas pu être lu.",
   "certificateAction": "Reconnectez le canal FRP pour réémettre le certificat ou suivez le runbook joint sur le VPS.",
 }
+

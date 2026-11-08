@@ -1604,7 +1604,7 @@ it('excludes plugin card open-buttons from the touch floor; their overlay owns t
   // plugin-inventory `<strong>`, which are not buttons, so the floor's
   // `:is(button,[role="button"],select,input…)` never matched them anyway.
   expect(MOBILE_LAYOUT_STYLES).toContain(
-    ':not([role="switch"],[role="checkbox"],[role="radio"],[role="slider"],button[class*="_cardTitle"][class*="_cardOpen"],[data-dsh-adapt="off"],[data-dsh-adapt="off"] *)'
+    ':not([role="switch"],[role="checkbox"],[role="radio"],[role="slider"],[role="tab"],button[class*="_cardTitle"][class*="_cardOpen"],[data-dsh-adapt="off"],[data-dsh-adapt="off"] *)'
   )
 })
 
@@ -1620,3 +1620,4 @@ it('stops Android WebView font boosting from inflating fixed-px line boxes', () 
   expect(MOBILE_LAYOUT_STYLES).toContain('-webkit-text-size-adjust:100%')
   expect(MOBILE_LAYOUT_STYLES).toContain('text-size-adjust:100%')
 })
+

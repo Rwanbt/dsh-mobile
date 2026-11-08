@@ -1043,8 +1043,21 @@ function installControl(): { remove: () => void; toggle: () => void; isOpen: () 
   // Two App builds exist: the compatibility APK (32-bit friendly, no iroh) and the
   // full 64-bit APK that adds the optional iroh transport.
   const appDownloads = element('div', 'dsh-mobile-control__app-downloads')
-  const appDownload = element('a', 'dsh-mobile-control__app-download'); appDownload.href = GITHUB_RELEASES_URL; appDownload.target = '_blank'; appDownload.rel = 'noopener noreferrer'; appDownload.textContent = t('downloadAndroid'); appDownload.setAttribute('aria-label', t('downloadAndroidAria'))
-  const appDownloadIroh = element('a', 'dsh-mobile-control__app-download is-iroh'); appDownloadIroh.href = GITHUB_RELEASES_URL; appDownloadIroh.target = '_blank'; appDownloadIroh.rel = 'noopener noreferrer'; appDownloadIroh.textContent = t('downloadAndroidIroh'); appDownloadIroh.setAttribute('aria-label', t('downloadAndroidIrohAria')); appDownloadIroh.hidden = true
+  const fillDownload = (link: HTMLElement, text: string): void => {
+    const separator = text.indexOf(' · ')
+    const title = separator < 0 ? text : text.slice(0, separator)
+    const meta = separator < 0 ? '' : text.slice(separator + 3)
+    const wrap = element('span', 'dsh-mobile-control__app-download-text')
+    const titleEl = element('span', 'dsh-mobile-control__app-download-title'); titleEl.textContent = title
+    wrap.append(titleEl)
+    if (meta !== '') {
+      const metaEl = element('span', 'dsh-mobile-control__app-download-meta'); metaEl.textContent = meta
+      wrap.append(metaEl)
+    }
+    link.replaceChildren(wrap)
+  }
+  const appDownload = element('a', 'dsh-mobile-control__app-download'); appDownload.href = GITHUB_RELEASES_URL; appDownload.target = '_blank'; appDownload.rel = 'noopener noreferrer'; appDownload.setAttribute('aria-label', t('downloadAndroidAria')); fillDownload(appDownload, t('downloadAndroid'))
+  const appDownloadIroh = element('a', 'dsh-mobile-control__app-download is-iroh'); appDownloadIroh.href = GITHUB_RELEASES_URL; appDownloadIroh.target = '_blank'; appDownloadIroh.rel = 'noopener noreferrer'; appDownloadIroh.setAttribute('aria-label', t('downloadAndroidIrohAria')); appDownloadIroh.hidden = true; fillDownload(appDownloadIroh, t('downloadAndroidIroh'))
   appDownloads.append(appDownload, appDownloadIroh)
   const switcher = element('div', 'dsh-mobile-control__switcher')
   const lanTab = element('button', 'dsh-mobile-control__tab is-active'); lanTab.type = 'button'; lanTab.textContent = t('lan')
@@ -1625,7 +1638,7 @@ function installControl(): { remove: () => void; toggle: () => void; isOpen: () 
   const remoteToggle = element('button', 'dsh-mobile-control__primary'); remoteToggle.type = 'button'; remoteToggle.textContent = t('enableRemote')
   const remoteLogin = element('button', 'dsh-mobile-control__primary'); remoteLogin.type = 'button'; remoteLogin.textContent = t('continueLogin'); remoteLogin.hidden = true
   const remoteReconnect = element('button', 'dsh-mobile-control__secondary'); remoteReconnect.type = 'button'; remoteReconnect.textContent = t('reconnect'); remoteReconnect.hidden = true
-  const remotePair = element('button', 'dsh-mobile-control__secondary'); remotePair.type = 'button'; remotePair.textContent = t('generateRemoteQr'); remotePair.disabled = true
+  const remotePair = element('button', 'dsh-mobile-control__primary'); remotePair.type = 'button'; remotePair.textContent = t('generateRemoteQr'); remotePair.disabled = true
   const remoteCopyLink = element('button', 'dsh-mobile-control__secondary'); remoteCopyLink.type = 'button'; remoteCopyLink.textContent = t('copyRemoteLink'); remoteCopyLink.disabled = true
   const remotePairLink = element('p', 'dsh-mobile-control__status'); remotePairLink.hidden = true
   const pairingValidity = element('p', 'dsh-mobile-control__component-status'); pairingValidity.hidden = true
@@ -1955,9 +1968,9 @@ function installControl(): { remove: () => void; toggle: () => void; isOpen: () 
       const sizeMb = (bytes: number | undefined): string | undefined => bytes === undefined ? undefined : (bytes / 1048576).toFixed(1)
       const compatSize = sizeMb(release.androidCompatBytes)
       const irohSize = sizeMb(release.androidIrohBytes)
-      appDownload.textContent = compatSize === undefined ? t('downloadAndroidVersion', { version }) : t('downloadAndroidVersionSize', { version, size: compatSize })
+      fillDownload(appDownload, compatSize === undefined ? t('downloadAndroidVersion', { version }) : t('downloadAndroidVersionSize', { version, size: compatSize }))
       appDownload.setAttribute('aria-label', t('downloadAndroidVersionAria', { version }))
-      appDownloadIroh.textContent = irohSize === undefined ? t('downloadAndroidIrohVersion', { version }) : t('downloadAndroidIrohVersionSize', { version, size: irohSize })
+      fillDownload(appDownloadIroh, irohSize === undefined ? t('downloadAndroidIrohVersion', { version }) : t('downloadAndroidIrohVersionSize', { version, size: irohSize }))
       appDownloadIroh.setAttribute('aria-label', t('downloadAndroidIrohAria', { version }))
     }
     appDownload.href = release.androidDownloadUrl
@@ -2769,6 +2782,7 @@ function installControl(): { remove: () => void; toggle: () => void; isOpen: () 
     remoteAccessLink.textContent = remoteOrigin
     remoteAccessLink.title = remoteOrigin
     remoteStatus.classList.toggle('is-running', remoteReady)
+    remoteStatus.classList.toggle('is-error', state === 'error' || state === 'unavailable')
     const labels: Record<string, string> = {
       off: t('remoteOff'),
       unavailable: cpolar ? t('remoteUnavailableCpolar')
@@ -2801,6 +2815,8 @@ function installControl(): { remove: () => void; toggle: () => void; isOpen: () 
     remoteSetup.disabled = remoteSetupUrl === '' || remoteReconnectBusy
     remoteSetupRetry.disabled = remoteReconnectBusy
     remoteToggle.textContent = remoteRunning ? t('disableRemote') : t('enableRemote')
+    remoteToggle.classList.toggle('dsh-mobile-control__primary', !remoteRunning)
+    remoteToggle.classList.toggle('dsh-mobile-control__secondary', remoteRunning)
     const originPrepared = data.originMode === 'managed' ? caddySupported && caddyInstalled && caddyConfiguration.configured === true : originConfigured && !caddyModeManagedSelected
     const providerPrepared = cpolar ? cpolarInstalled && cpolarConfigured
       : cloudflared ? cloudflaredInstalled
@@ -5499,8 +5515,8 @@ export const DSH_NATIVE_STYLES = `
   --dshm-radius-window:var(--dsw-radius-panel,28px);
   --dshm-border:1px solid var(--dsw-alias-border-l2,#0000001a);
   --dshm-border-soft:1px solid var(--dsw-alias-border-l1,#0000000a);
-  --dshm-accent:var(--dsw-alias-label-primary-bluish,#4176e6);
-  --dshm-accent-soft:color-mix(in srgb, var(--dsw-alias-label-primary-bluish,#4176e6) 12%, transparent);
+  --dshm-accent:var(--dsw-alias-state-business-primary,#7aaaff);
+  --dshm-accent-soft:color-mix(in srgb, var(--dshm-accent) 14%, transparent);
   color:var(--dsw-alias-label-primary,#0f1115);
   font:14px/1.45 -apple-system,"Segoe UI","Microsoft YaHei",Helvetica,Arial,sans-serif;
 }
@@ -5575,28 +5591,33 @@ export const DSH_NATIVE_STYLES = `
 }
 .dsh-mobile-control__primary{
   min-height:36px;
+  height:36px;
   padding:0 14px;
   border:0;
   border-radius:var(--dshm-radius-row);
-  background:var(--dshm-accent);
-  color:#ffffff;
+  background:var(--dsw-alias-button-primary-fill,#f9fafb);
+  color:var(--dsw-alias-label-primary-foreground,#0f1115);
   font-size:14px;
   font-weight:500;
 }
-.dsh-mobile-control__primary:hover:not(:disabled){filter:brightness(.96)}
+.dsh-mobile-control__primary:hover:not(:disabled){filter:none;background:var(--dsw-alias-button-primary-hover,#ebeef2)}
+.dsh-mobile-control__primary:disabled{background:var(--dsw-alias-bg-layer-3,#353638);color:var(--dsw-alias-label-tertiary,#adb2b8);border:var(--dshm-border);opacity:1;cursor:not-allowed}
 .dsh-mobile-control__primary:focus-visible,
 .dsh-mobile-control__secondary:focus-visible,
 .dsh-mobile-control__manage:focus-visible{outline:2px solid var(--dshm-accent);outline-offset:2px}
 .dsh-mobile-control__secondary{
-  min-height:28px;
-  padding:0 12px;
+  min-height:36px;
+  height:36px;
+  padding:0 14px;
   border:var(--dshm-border);
-  border-radius:var(--dshm-radius-control);
-  background:var(--dsw-alias-bg-layer-2,#ffffff);
+  border-radius:var(--dshm-radius-row);
+  background:transparent;
   color:var(--dsw-alias-label-primary,#0f1115);
-  font-size:13px;
+  font-size:14px;
+  font-weight:500;
 }
 .dsh-mobile-control__secondary:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover,#2631480f)}
+.dsh-mobile-control__secondary:disabled{color:var(--dsw-alias-label-tertiary,#adb2b8);opacity:1;cursor:not-allowed}
 .dsh-mobile-control__manage{
   min-height:28px;
   border:var(--dshm-border);
@@ -5654,6 +5675,68 @@ export const DSH_NATIVE_STYLES = `
 }
 @media (prefers-reduced-motion:reduce){
   .dsh-mobile-control__provider,.dsh-mobile-control__primary,.dsh-mobile-control__secondary{transition:none}
+}
+/* Panel shell: DSH window surface on top of layer-1 so cards stay visible. */
+.dsh-mobile-control__panel{background:var(--dsw-alias-bg-layer-1,#232324)}
+.dsh-mobile-control__header-actions{gap:4px}
+.dsh-mobile-control__diagnostic-entry,.dsh-mobile-control__update-plugin{height:32px;min-height:32px;padding:0 10px;border-radius:var(--dshm-radius-control);background:transparent;color:var(--dsw-alias-label-secondary,#cfd3d6);font-size:13px;font-weight:500;white-space:nowrap}
+.dsh-mobile-control__diagnostic-entry:hover,.dsh-mobile-control__update-plugin:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover,#ffffff14);color:var(--dsw-alias-label-primary,#f9fafb)}
+.dsh-mobile-control__diagnostic-entry[aria-pressed="true"]{background:var(--dsw-alias-interactive-bg-active,#ffffff24);color:var(--dsw-alias-label-primary,#f9fafb)}
+.dsh-mobile-control__close{width:32px;height:32px;min-width:32px;padding:0;border-radius:var(--dshm-radius-control);background:transparent;color:var(--dsw-alias-label-secondary,#cfd3d6);font-size:18px;line-height:1}
+.dsh-mobile-control__close:hover{background:var(--dsw-alias-interactive-bg-hover,#ffffff14);color:var(--dsw-alias-label-primary,#f9fafb)}
+/* APK download cards: structured title/meta rows, equal heights, neutral border. */
+.dsh-mobile-control__app-downloads{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px 18px;border-bottom:var(--dshm-border)}
+.dsh-mobile-control__app-download{display:flex;align-items:center;justify-content:space-between;gap:10px;box-sizing:border-box;min-height:48px;height:auto;padding:8px 12px;border:var(--dshm-border);border-radius:var(--dshm-radius-row);background:var(--dsw-alias-bg-layer-2,#2c2c2e);color:var(--dsw-alias-label-primary,#f9fafb);font-size:12px;font-weight:500;line-height:1.35;text-align:left;white-space:normal;text-decoration:none}
+.dsh-mobile-control__app-download:hover{border-color:var(--dsw-alias-border-l3,#ffffff29);background:var(--dsw-alias-interactive-bg-hover,#ffffff14)}
+.dsh-mobile-control__app-download.is-iroh{border-color:var(--dshm-border);background:var(--dsw-alias-bg-layer-2,#2c2c2e);color:var(--dsw-alias-label-primary,#f9fafb)}
+.dsh-mobile-control__app-download-text{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1 1 auto}
+.dsh-mobile-control__app-download-title{font-size:12.5px;font-weight:600;line-height:1.35;overflow-wrap:anywhere}
+.dsh-mobile-control__app-download-meta{font-size:11px;font-weight:400;line-height:1.3;color:var(--dsw-alias-label-tertiary,#adb2b8)}
+.dsh-mobile-control__app-download::after{color:var(--dsw-alias-label-tertiary,#adb2b8);font-size:13px;flex:none;margin-left:2px}
+/* Provider rows: title + wrapping badge, quiet selected accent. */
+.dsh-mobile-control__provider{display:flex;flex-direction:column;gap:4px;padding:12px;border:var(--dshm-border-soft);border-radius:var(--dshm-radius-row);background:var(--dsw-alias-bg-layer-2,#2c2c2e);box-shadow:none}
+.dsh-mobile-control__provider:hover:not(:disabled){border-color:var(--dsw-alias-border-l2,#ffffff1f);background:var(--dsw-alias-interactive-bg-hover,#ffffff14)}
+.dsh-mobile-control__provider.is-selected{border-color:var(--dshm-accent);background:var(--dshm-accent-soft)}
+.dsh-mobile-control__provider.is-selected::before{display:none}
+.dsh-mobile-control__provider-top{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;min-width:0}
+.dsh-mobile-control__provider-top strong{min-width:0;font-size:13px;line-height:18px;font-weight:600;overflow-wrap:anywhere}
+.dsh-mobile-control__provider-badge{flex:0 0 auto;padding:1px 8px;border-radius:999px;background:var(--dsw-alias-bg-layer-3,#353638);color:var(--dsw-alias-label-secondary,#cfd3d6);font-size:11px;font-weight:600;line-height:16px}
+.dsh-mobile-control__provider.is-selected .dsh-mobile-control__provider-badge{background:var(--dshm-accent-soft);color:var(--dshm-accent)}
+.dsh-mobile-control__provider-description{margin-top:0;color:var(--dsw-alias-label-secondary,#cfd3d6);font-size:12.5px;line-height:1.5}
+.dsh-mobile-control__section-title{padding:0;margin:0 0 8px;color:var(--dsw-alias-label-secondary,#cfd3d6);font-size:13px;font-weight:650;line-height:18px}
+/* Status notices: quiet surface, tinted for errors/success. */
+.dsh-mobile-control__status{padding:9px 10px;border:var(--dshm-border-soft);border-radius:var(--dshm-radius-control);background:var(--dsw-alias-bg-layer-2,#2c2c2e);color:var(--dsw-alias-label-secondary,#cfd3d6);font-size:13px;line-height:1.45}
+.dsh-mobile-control__status.is-error,.dsh-mobile-control__status.is-attention{border-color:color-mix(in srgb,var(--dsw-alias-state-error-primary,#f25a5a) 35%,transparent);background:color-mix(in srgb,var(--dsw-alias-state-error-primary,#f25a5a) 10%,transparent);color:var(--dsw-alias-state-error-primary,#f25a5a)}
+.dsh-mobile-control__status.is-running{border-color:color-mix(in srgb,var(--dsw-alias-state-success-primary,#22c55e) 35%,transparent);background:color-mix(in srgb,var(--dsw-alias-state-success-primary,#22c55e) 10%,transparent);color:var(--dsw-alias-state-success-primary,#22c55e)}
+/* Remote actions: a wrapping 2-up layout; a lone trailing action takes the full row. */
+.dsh-mobile-control__view.is-remote .dsh-mobile-control__remote-workspace>.dsh-mobile-control__actions{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch}
+.dsh-mobile-control__view.is-remote .dsh-mobile-control__remote-workspace>.dsh-mobile-control__actions>button{flex:1 1 calc(50% - 4px);height:48px;min-height:48px;padding:6px 10px;font-size:13px;line-height:1.3;white-space:normal;text-align:center}
+.dsh-mobile-control__header h2{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dsh-mobile-control__header-actions{flex:0 0 auto}
+.dsh-mobile-control__qr-placeholder{width:100%;min-height:150px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:20px;border:1px dashed var(--dsw-alias-border-l3,#ffffff29);border-radius:var(--dshm-radius-row);background:var(--dsw-alias-bg-layer-1,#232324);color:var(--dsw-alias-label-secondary,#cfd3d6);font-size:13px;line-height:1.5;text-align:center}
+/* Devices view: readable segmented switch, padded empty state, muted disabled clear. */
+.dsh-mobile-control__switcher,.dsh-mobile-control__tabs{background:var(--dsw-alias-bg-layer-1,#232324);padding:3px;border-radius:12px;gap:3px}
+.dsh-mobile-control__tab{min-height:30px;border-radius:9px;color:var(--dsw-alias-label-secondary,#cfd3d6);font-size:13px}
+.dsh-mobile-control__tab.is-active{background:var(--dsw-alias-bg-layer-3,#353638);color:var(--dsw-alias-label-primary,#f9fafb);box-shadow:inset 0 0 0 .5px var(--dsw-alias-border-l2,#ffffff1f)}
+.dsh-mobile-control__devices{padding:12px;display:flex;flex-direction:column;gap:8px}
+.dsh-mobile-control__devices p{margin:0;color:var(--dsw-alias-label-secondary,#cfd3d6);font-size:13px}
+.dsh-mobile-control__manage{min-height:36px;font-size:13px}
+.dsh-mobile-control__manage:disabled{opacity:.5;cursor:not-allowed}
+@media (max-width:760px){
+  .dsh-mobile-control__remote-columns{grid-template-columns:minmax(0,1fr)}
+  .dsh-mobile-control__channel-pane{max-height:none;overflow:visible;padding-right:0}
+  .dsh-mobile-control__provider-section{height:auto!important;max-height:none!important;overflow:visible!important}
+  .dsh-mobile-control__remote-workspace{min-width:0}
+}
+@media (max-width:560px){
+  .dsh-mobile-control__app-downloads{grid-template-columns:1fr;padding:10px 14px}
+  .dsh-mobile-control__app-download{min-height:44px}
+  .dsh-mobile-control__panel h2{font-size:15px;line-height:20px}
+  .dsh-mobile-control__header-actions{gap:0}
+  .dsh-mobile-control__diagnostic-entry,.dsh-mobile-control__update-plugin{padding:0 7px;font-size:12px}
+  .dsh-mobile-control__close{width:28px;height:28px;min-width:28px}
+  .dsh-mobile-control__primary,.dsh-mobile-control__secondary{height:auto;min-height:36px;padding:8px 12px;line-height:1.3;white-space:normal}
+  .dsh-mobile-control__view.is-remote .dsh-mobile-control__remote-workspace>.dsh-mobile-control__actions>button{flex-basis:100%}
 }
 `
 
