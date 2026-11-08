@@ -70,7 +70,7 @@ npm run test:coverage    # rapport de couverture (fournisseur inclus)
 npm audit                # dépendances
 ```
 
-Limites connues : la couverture du client DOM (`src/client.ts`, ~20 %) reste faible car les tests Node ne rendent qu'un faux DOM ; les modules hôte et sécurité sont, eux, couverts à plus de 88 %. Un test upstream de starvation de worker (`tests/extension-worker.test.ts`) est instable et échoue indépendamment de ce fork ; il est exclu du rapport de couverture de référence.
+Limites connues : la couverture du client DOM (`src/client.ts`, ~20 %) reste faible car les tests Node ne rendent qu'un faux DOM ; les modules hôte et sécurité sont, eux, couverts à plus de 88 %. Le pont de flux du worker acquitte désormais les lectures explicites (`read()`) et donne la priorité au premier chunk d'un flux affamé : le test de starvation passe et la suite complète est verte.
 
 ## Installation
 
@@ -152,3 +152,4 @@ npm test
 - Interface et design : [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).
 
 Ce fork est distribué sous **Apache-2.0** ; voir [LICENSE](LICENSE).
+

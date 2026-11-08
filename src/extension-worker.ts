@@ -386,12 +386,26 @@ function responseMetadata(message: Record<string, unknown>): Omit<MobileRouteRes
 }
 /** Credit belongs to bytes actually removed by the consumer, including reads after source EOF. */
 class WorkerStreamBridge extends Readable {
+  private readonly consumedChunks = new WeakSet<Buffer>()
   constructor(private readonly consume: (bytes: number) => void) { super({ highWaterMark: 16 * 1024 }) }
   override _read(): void { /* The worker's credit window bounds incoming bytes. */ }
+  private consumeOnce(chunk: Buffer): void {
+    if (this.consumedChunks.has(chunk)) return
+    this.consumedChunks.add(chunk)
+    this.consume(chunk.byteLength)
+  }
+  override read(size?: number): unknown {
+    // `read()` in paused mode does not emit `data`, so the explicit consumer path
+    // must acknowledge here as well or its stream credit can never be replenished.
+    const chunk = super.read(size)
+    if (Buffer.isBuffer(chunk)) this.consumeOnce(chunk)
+    return chunk
+  }
   override emit(event: string | symbol, ...args: unknown[]): boolean {
     // Node emits data both for explicit read() and for a push() into a flowing pipeline.
-    // Observing read() alone misses the latter and can permanently exhaust stream credit.
-    if (event === 'data' && Buffer.isBuffer(args[0])) this.consume(args[0].byteLength)
+    // `consumeOnce` keeps the same chunk from being acknowledged twice on that path.
+    if (event === 'data' && Buffer.isBuffer(args[0])) this.consumeOnce(args[0])
     return super.emit(event, ...args)
   }
 }
+

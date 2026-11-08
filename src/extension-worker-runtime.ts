@@ -170,6 +170,18 @@ function wakeSendBudgetWaiters(): void {
   if (drainingBudget) return
   drainingBudget = true
   try {
+    // A newly opened stream can otherwise be starved forever: established streams
+    // re-consume every freed byte in FIFO order before the new demand is reached.
+    // Give a stream that has never sent a byte the first chance at released budget;
+    // after its first chunk it joins the ordinary FIFO rotation.
+    const fresh = sendBudgetWaiters.findIndex(waiter =>
+      !waiter.bail()
+      && (streamCredit.get(waiter.id) ?? 0) >= waiter.length
+      && (streamSent.get(waiter.id) ?? 0) === 0)
+    if (fresh > 0) {
+      const [first] = sendBudgetWaiters.splice(fresh, 1)
+      if (first !== undefined) sendBudgetWaiters.unshift(first)
+    }
     for (let index = 0; index < sendBudgetWaiters.length;) {
       const waiter = sendBudgetWaiters[index]!
       if (waiter.bail()) { sendBudgetWaiters.splice(index, 1); waiter.resolve(false); continue }
