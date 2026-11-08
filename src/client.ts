@@ -1054,7 +1054,13 @@ function installControl(): { remove: () => void; toggle: () => void; isOpen: () 
       const metaEl = element('span', 'dsh-mobile-control__app-download-meta'); metaEl.textContent = meta
       wrap.append(metaEl)
     }
-    link.replaceChildren(wrap)
+    if (typeof link.replaceChildren === 'function') {
+      link.replaceChildren(wrap)
+      return
+    }
+    // Fake DOM nodes used by older harness tests may lack replaceChildren.
+    while (link.firstChild) link.removeChild(link.firstChild)
+    link.append(wrap)
   }
   const appDownload = element('a', 'dsh-mobile-control__app-download'); appDownload.href = GITHUB_RELEASES_URL; appDownload.target = '_blank'; appDownload.rel = 'noopener noreferrer'; appDownload.setAttribute('aria-label', t('downloadAndroidAria')); fillDownload(appDownload, t('downloadAndroid'))
   const appDownloadIroh = element('a', 'dsh-mobile-control__app-download is-iroh'); appDownloadIroh.href = GITHUB_RELEASES_URL; appDownloadIroh.target = '_blank'; appDownloadIroh.rel = 'noopener noreferrer'; appDownloadIroh.setAttribute('aria-label', t('downloadAndroidIrohAria')); appDownloadIroh.hidden = true; fillDownload(appDownloadIroh, t('downloadAndroidIroh'))
@@ -1338,7 +1344,7 @@ function installControl(): { remove: () => void; toggle: () => void; isOpen: () 
     providerCardOrder[next]?.focus()
   })
   const methodField = element('div', 'dsh-mobile-control__method-field')
-  providerHeading.classList.add('dsh-mobile-control__field-label')
+  providerHeading.className = `${providerHeading.className} dsh-mobile-control__field-label`.trim()
   const methodCombo = element('button', 'dsh-mobile-control__method-combo'); methodCombo.type = 'button'
   methodCombo.setAttribute('aria-haspopup', 'listbox')
   methodCombo.setAttribute('aria-expanded', 'false')
@@ -1355,22 +1361,26 @@ function installControl(): { remove: () => void; toggle: () => void; isOpen: () 
   methodField.append(providerHeading, methodCombo, methodSummary, methodPopover)
   providerSection.append(methodField)
   const syncMethodCombo = (): void => {
-    const selected = providerChoices.querySelector<HTMLElement>('.dsh-mobile-control__provider.is-selected')
-      ?? providerChoices.querySelector<HTMLElement>('.dsh-mobile-control__provider')
-    const name = selected?.querySelector('strong')?.textContent ?? ''
-    const badge = selected?.querySelector('.dsh-mobile-control__provider-badge')?.textContent ?? ''
-    const description = selected?.querySelector('.dsh-mobile-control__provider-description')?.textContent ?? ''
+    const find = (root: HTMLElement, selector: string): HTMLElement | null =>
+      typeof root.querySelector === 'function' ? root.querySelector<HTMLElement>(selector) : null
+    const selected = find(providerChoices, '.dsh-mobile-control__provider.is-selected')
+      ?? find(providerChoices, '.dsh-mobile-control__provider')
+    const name = selected === null ? '' : find(selected, 'strong')?.textContent ?? ''
+    const badge = selected === null ? '' : find(selected, '.dsh-mobile-control__provider-badge')?.textContent ?? ''
+    const description = selected === null ? '' : find(selected, '.dsh-mobile-control__provider-description')?.textContent ?? ''
     methodName.textContent = name
     methodBadge.textContent = badge
     methodBadge.hidden = badge === ''
     methodSummary.textContent = description
     methodCombo.setAttribute('aria-label', name === '' ? t('providerGroupAria') : `${t('providerGroupAria')} : ${name}`)
   }
-  new MutationObserver(() => syncMethodCombo()).observe(providerChoices, {
-    subtree: true,
-    attributes: true,
-    attributeFilter: ['class', 'aria-checked'],
-  })
+  if (typeof MutationObserver === 'function') {
+    new MutationObserver(() => syncMethodCombo()).observe(providerChoices, {
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'aria-checked'],
+    })
+  }
   syncMethodCombo()
   let methodPopoverOpen = false
   const setMethodPopover = (open: boolean): void => {
