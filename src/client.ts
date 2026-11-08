@@ -1975,7 +1975,7 @@ function installControl(): { remove: () => void; toggle: () => void; isOpen: () 
   let lanChangeRequest: Promise<void> | undefined
   let remoteRunning = false
   let remoteReady = false
-  let remoteProvider: MobileRemoteProvider = 'tailscale'
+  let remoteProvider: MobileRemoteProvider = 'opentunnel'
   let remoteLoginUrl = ''
   let remoteSetupUrl = ''
   let remoteSetupPending = false
@@ -2133,7 +2133,9 @@ function installControl(): { remove: () => void; toggle: () => void; isOpen: () 
     selectView('remote'); loadRemote()
   })
   remoteTab.addEventListener('click', () => { selectView('remote'); loadRemote() })
-  selectView('lan')
+  // The fork's default channel is OpenTunnel / DSH Remote: open the panel on
+  // the remote view (the persisted provider is displayed by the combobox).
+  selectView('remote')
   let returnFocus: HTMLElement | undefined
   const setOpen = (open: boolean): void => {
     const changed = panel.hidden === open

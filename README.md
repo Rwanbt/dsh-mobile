@@ -15,7 +15,7 @@
 ## Ce que ce fork ajoute
 
 - **Interface française complète** : panneau « Accès mobile », pages d'appairage/reconnexion, messages de diagnostic et ressources Android (`values-fr`). Le plugin suit la langue de DSH.
-- **OpenTunnel / DSH Remote intégré** : premier choix dans la liste des méthodes. Tunnel TLS public géré par le relais OpenTunnel, **aucun domaine, port public ni compte** requis ; l'identité est persistée dans `$DSH_HOME/mobile-access/opentunnel` pour garder une URL stable. Le mode précédent (proxy inverse/origin) est sauvegardé et restauré à la désactivation.
+- **OpenTunnel / DSH Remote intégré** : premier choix dans la liste et **vue ouverte par défaut** à l'ouverture du panneau. Tunnel TLS public géré par le relais OpenTunnel, **aucun domaine, port public ni compte** requis ; l'identité est persistée dans `$DSH_HOME/mobile-access/opentunnel` pour garder une URL stable. Le mode précédent (proxy inverse/origin) est sauvegardé et restauré à la désactivation.
 - **Panneau compact sans scroll** : méthode de connexion en **combobox**, statut et action principale visibles, QR d'appairage, actions secondaires et téléchargements APK repliés dans des sections dépliables.
 - **Design DSH natif** : tokens DSH réels (couleurs, rayons, boutons, typographie), scrim neutre, correction des débordements responsive (page Plugins, Paramètres, tiroir mobile).
 - **Android DeepSeek** : icône baleine DeepSeek, fonds neutres, suppression des visuels gacha/mascotte, thème clair/sombre, textes français.
@@ -152,4 +152,5 @@ npm test
 - Interface et design : [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).
 
 Ce fork est distribué sous **Apache-2.0** ; voir [LICENSE](LICENSE).
+
 
