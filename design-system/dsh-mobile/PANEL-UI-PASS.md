@@ -44,3 +44,11 @@ tokens calculés, géométrie DOM et captures.
 ## Passe complémentaire (19:35)
 - **OpenTunnel / DSH Remote est désormais la première carte** de la liste des méthodes de connexion, suivi de « Réseau local » puis Tailscale, cpolar, cloudflared, FRP, proxy inverse, iroh. Les cartes partagent maintenant le même groupe radio (navigation clavier cohérente) et le clic LAN est exclu du raccourci « passer en vue distante ».
 - **Carte « Réseau local » aérée** : padding 16 px, titre 14/650 avec marge basse, description et note avec interligne, champ/select espacés, boutons et statut séparés par 12–14 px.
+
+## Panneau compact (implémenté, 20:15)
+- La liste des 8 cartes fournisseurs est remplacée par un **combobox** « Méthode de connexion » : bouton 44 px + popover de 8 lignes compactes (nom + badge), description de la méthode active sous le champ.
+- Disposition **une seule colonne** : méthode en haut, puis la carte de contenu (statut, actions, QR replié).
+- Les **téléchargements APK** passent dans un <details> replié en pied de panneau ; l'intro distante est supprimée.
+- Les **QR d'appairage / actions secondaires** sont repliés dans « Code QR d'appairage » (reste accessible au clic).
+- Mesures vérifiées à 1280×900 : vue LAN **718 px**, vue OpenTunnel **524 px**, scrollHeight <= clientHeight → **aucun scroll**. Sur une fenêtre très basse (< 800 px de haut), le panneau peut encore scroller quand les détails sont ouverts.
+- Captures : panel_compact_lan.png, panel_compact_methods.png, panel_compact_remote.png (dossier ork-artifacts/android/after/).

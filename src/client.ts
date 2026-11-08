@@ -1337,7 +1337,67 @@ function installControl(): { remove: () => void; toggle: () => void; isOpen: () 
     event.preventDefault()
     providerCardOrder[next]?.focus()
   })
-  providerSection.append(providerHeading, providerChoices)
+  const methodField = element('div', 'dsh-mobile-control__method-field')
+  providerHeading.classList.add('dsh-mobile-control__field-label')
+  const methodCombo = element('button', 'dsh-mobile-control__method-combo'); methodCombo.type = 'button'
+  methodCombo.setAttribute('aria-haspopup', 'listbox')
+  methodCombo.setAttribute('aria-expanded', 'false')
+  const methodDot = element('span', 'dsh-mobile-control__method-dot')
+  const methodName = element('span', 'dsh-mobile-control__method-name')
+  const methodBadge = element('span', 'dsh-mobile-control__provider-badge dsh-mobile-control__method-badge')
+  const methodChevron = element('span', 'dsh-mobile-control__method-chevron')
+  methodCombo.append(methodDot, methodName, methodBadge, methodChevron)
+  const methodSummary = element('p', 'dsh-mobile-control__method-summary')
+  const methodPopover = element('div', 'dsh-mobile-control__method-popover'); methodPopover.hidden = true
+  methodPopover.id = 'dsh-mobile-method-popover'
+  methodCombo.setAttribute('aria-controls', methodPopover.id)
+  methodPopover.append(providerChoices)
+  methodField.append(providerHeading, methodCombo, methodSummary, methodPopover)
+  providerSection.append(methodField)
+  const syncMethodCombo = (): void => {
+    const selected = providerChoices.querySelector<HTMLElement>('.dsh-mobile-control__provider.is-selected')
+      ?? providerChoices.querySelector<HTMLElement>('.dsh-mobile-control__provider')
+    const name = selected?.querySelector('strong')?.textContent ?? ''
+    const badge = selected?.querySelector('.dsh-mobile-control__provider-badge')?.textContent ?? ''
+    const description = selected?.querySelector('.dsh-mobile-control__provider-description')?.textContent ?? ''
+    methodName.textContent = name
+    methodBadge.textContent = badge
+    methodBadge.hidden = badge === ''
+    methodSummary.textContent = description
+    methodCombo.setAttribute('aria-label', name === '' ? t('providerGroupAria') : `${t('providerGroupAria')} : ${name}`)
+  }
+  new MutationObserver(() => syncMethodCombo()).observe(providerChoices, {
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['class', 'aria-checked'],
+  })
+  syncMethodCombo()
+  let methodPopoverOpen = false
+  const setMethodPopover = (open: boolean): void => {
+    methodPopoverOpen = open
+    methodPopover.hidden = !open
+    methodCombo.setAttribute('aria-expanded', String(open))
+    if (open) {
+      const selected = providerChoices.querySelector<HTMLElement>('.dsh-mobile-control__provider.is-selected')
+      ;(selected ?? providerChoices.querySelector<HTMLElement>('.dsh-mobile-control__provider'))?.focus({ preventScroll: true })
+    } else {
+      methodCombo.focus({ preventScroll: true })
+    }
+  }
+  methodCombo.addEventListener('click', () => setMethodPopover(!methodPopoverOpen))
+  providerChoices.addEventListener('click', () => {
+    setTimeout(() => { if (methodPopoverOpen) setMethodPopover(false) }, 0)
+  })
+  methodField.addEventListener('keydown', event => {
+    if (event.key !== 'Escape' || !methodPopoverOpen) return
+    event.preventDefault()
+    setMethodPopover(false)
+  })
+  document.addEventListener('click', event => {
+    if (!methodPopoverOpen) return
+    if (event.target instanceof Node && methodField.contains(event.target)) return
+    setMethodPopover(false)
+  })
   const frpSetup = element('section', 'dsh-mobile-control__frp-setup'); frpSetup.hidden = true
   const frpSetupTitle = element('h3', 'dsh-mobile-control__section-title'); frpSetupTitle.textContent = t('prepareFrp')
   const frpStep1 = element('section', 'dsh-mobile-control__frp-step')
@@ -1811,7 +1871,10 @@ function installControl(): { remove: () => void; toggle: () => void; isOpen: () 
   macosFolderHelpBody.append(macosFolderHelpNote)
   macosFolderHelp.append(macosFolderHelpSummary, macosFolderHelpBody)
   setupDetailsRow.append(macosFolderHelp)
-  remoteWorkspace.append(remoteStatus, remoteAccess, remoteGuide, remotePermission, providerSetupBody, remoteQr, pairingValidity, providerInstallRow, remoteActions, remotePairLink, setupDetailsRow)
+  const remotePairingDetails = element('details', 'dsh-mobile-control__pairing-details')
+  const remotePairingSummary = element('summary'); remotePairingSummary.textContent = t('pairingQr')
+  remotePairingDetails.append(remotePairingSummary, remoteQr, remotePairLink, pairingValidity)
+  remoteWorkspace.append(remoteStatus, remoteAccess, remoteGuide, remotePermission, providerSetupBody, providerInstallRow, remoteActions, remotePairingDetails, setupDetailsRow)
   const diagnosticsView = element('div', 'dsh-mobile-control__view is-diagnostics'); diagnosticsView.hidden = true
   // Paired-device management is its own page (like diagnostics), reached from the
   // LAN view's "Manage paired devices" button, instead of expanding inline.
@@ -1859,7 +1922,10 @@ function installControl(): { remove: () => void; toggle: () => void; isOpen: () 
   const diagnosticsReport = element('pre', 'dsh-mobile-control__diagnostic-report')
   diagnosticsDetails.append(diagnosticsDetailsSummary, diagnosticsReport)
   header.append(title, headerActions); actions.append(toggle, pair, linkPair)
-  lanView.append(lanSetup, lanChange, access, qrBox, lanPairingValidity, status, extensionStatus, actions, trustedNetworks)
+  const lanPairingDetails = element('details', 'dsh-mobile-control__pairing-details')
+  const lanPairingSummary = element('summary'); lanPairingSummary.textContent = t('pairingQr')
+  lanPairingDetails.append(lanPairingSummary, qrBox, lanPairingValidity, actions)
+  lanView.append(lanSetup, lanChange, access, lanPairingDetails, status, extensionStatus, trustedNetworks)
   // Two-column remote layout: the channel list on the left, its configuration on
   // the right, so switching providers no longer scrolls the setup out of view.
   const channelPane = element('div', 'dsh-mobile-control__channel-pane')
@@ -1867,8 +1933,12 @@ function installControl(): { remove: () => void; toggle: () => void; isOpen: () 
   const remoteColumns = element('div', 'dsh-mobile-control__remote-columns')
   remoteColumns.append(providerSection, channelPane)
   remoteView.append(remoteIntro, httpFrameWarning, remoteColumns)
+  remoteIntro.hidden = true
   diagnosticsView.append(diagnosticsIntro, diagnosticsSummary, diagnosticsToolbar, diagnosticsFeedback, diagnosticsChecks, wsPathsSection, diagnosticsDetails)
-  panel.append(header, releaseNotice, updateCard, appDownloads, extensionRecovery.section, remoteView, diagnosticsView, devicesView); root.append(panel); document.body.append(root)
+  const installDetails = element('details', 'dsh-mobile-control__install-details')
+  const installSummary = element('summary'); installSummary.textContent = t('downloadAndroid')
+  installDetails.append(installSummary, appDownloads)
+  panel.append(header, releaseNotice, updateCard, extensionRecovery.section, remoteView, diagnosticsView, devicesView, installDetails); root.append(panel); document.body.append(root)
   let running = false
   let origin = ''
   let lanConfigured = true
@@ -2026,7 +2096,7 @@ function installControl(): { remove: () => void; toggle: () => void; isOpen: () 
       if (!wsPathsLoaded) loadWsPaths()
     }
     updatePlugin.hidden = subpage || !pluginUpdateAvailable
-    appDownloads.hidden = subpage
+    installDetails.hidden = subpage
     switcher.hidden = subpage
     title.textContent = view === 'lan' ? t('lanAccess') : view === 'remote' ? t('remoteAccess') : view === 'devices' ? t('managePairedDevices') : t('connectionDiagnostics')
   }
@@ -5752,6 +5822,43 @@ export const DSH_NATIVE_STYLES = `
   .dsh-mobile-control__primary,.dsh-mobile-control__secondary{height:auto;min-height:36px;padding:8px 12px;line-height:1.3;white-space:normal}
   .dsh-mobile-control__view.is-remote .dsh-mobile-control__remote-workspace>.dsh-mobile-control__actions>button{flex-basis:100%}
 }
+/* Compact panel: one method combobox replaces the provider card column. */
+.dsh-mobile-control__remote-columns{display:flex;flex-direction:column;gap:12px}
+.dsh-mobile-control__remote-columns>.dsh-mobile-control__provider-section{position:relative;order:1;width:100%;min-width:0;margin:0;height:auto!important;max-height:none!important;overflow:visible!important;padding-right:0!important}
+.dsh-mobile-control__remote-columns>.dsh-mobile-control__channel-pane{order:2;width:100%;min-width:0;max-height:none;overflow:visible;padding:0}
+.dsh-mobile-control__method-field{position:relative;display:flex;flex-direction:column;gap:6px;min-width:0}
+.dsh-mobile-control__method-field>.dsh-mobile-control__field-label{margin:0;font-size:12px;line-height:16px;font-weight:500;color:var(--dsw-alias-label-tertiary,#adb2b8)}
+.dsh-mobile-control__method-combo{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;padding:0 12px;border:var(--dshm-border);border-radius:var(--dshm-radius-row);background:var(--dsw-alias-bg-layer-2,#2c2c2e);color:var(--dsw-alias-label-primary,#f9fafb);font:600 13.5px/1.2 var(--dsh-font-family);text-align:left;cursor:pointer}
+.dsh-mobile-control__method-combo:hover{border-color:var(--dsw-alias-border-l3,#ffffff29);background:var(--dsw-alias-interactive-bg-hover,#ffffff14)}
+.dsh-mobile-control__method-combo:focus-visible{outline:2px solid var(--dshm-accent);outline-offset:2px}
+.dsh-mobile-control__method-dot{width:8px;height:8px;border-radius:50%;background:var(--dshm-accent);flex:none}
+.dsh-mobile-control__method-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dsh-mobile-control__method-badge{margin-left:auto;flex:none}
+.dsh-mobile-control__method-chevron{width:7px;height:7px;margin:-3px 2px 0 6px;border-right:1.5px solid var(--dsw-alias-label-tertiary,#adb2b8);border-bottom:1.5px solid var(--dsw-alias-label-tertiary,#adb2b8);transform:rotate(45deg);flex:none}
+.dsh-mobile-control__method-summary{min-height:18px;margin:0;color:var(--dsw-alias-label-secondary,#cfd3d6);font-size:12.5px;line-height:1.45}
+.dsh-mobile-control__method-popover{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:90;box-sizing:border-box;max-height:min(56vh,360px);overflow:auto;padding:6px;border:var(--dshm-border);border-radius:14px;background:var(--dsw-alias-bg-layer-2,#2c2c2e);box-shadow:0 10px 28px rgb(0 0 0 / 28%)}
+.dsh-mobile-control__method-popover[hidden]{display:none}
+.dsh-mobile-control__method-popover .dsh-mobile-control__provider-choices{display:flex;flex-direction:column;gap:2px}
+.dsh-mobile-control__method-popover .dsh-mobile-control__provider{display:flex;flex-direction:row;align-items:center;gap:8px;min-height:38px;padding:7px 10px;border:0;border-radius:10px;background:transparent;box-shadow:none}
+.dsh-mobile-control__method-popover .dsh-mobile-control__provider:hover{background:var(--dsw-alias-interactive-bg-hover,#ffffff14)}
+.dsh-mobile-control__method-popover .dsh-mobile-control__provider.is-selected{background:var(--dsw-alias-interactive-bg-active,#ffffff24)}
+.dsh-mobile-control__method-popover .dsh-mobile-control__provider-top{flex-wrap:nowrap;width:100%;gap:8px;min-width:0}
+.dsh-mobile-control__method-popover .dsh-mobile-control__provider-top strong{min-width:0;font-size:13px;line-height:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dsh-mobile-control__method-popover .dsh-mobile-control__provider-badge{margin-left:auto;flex:none}
+.dsh-mobile-control__method-popover .dsh-mobile-control__provider-description{display:none}
+/* Replied pairing and APK sections keep the panel short. */
+.dsh-mobile-control__pairing-details,.dsh-mobile-control__install-details{margin:0;padding:0 12px;border:var(--dshm-border-soft);border-radius:12px;background:var(--dsw-alias-bg-layer-2,#2c2c2e)}
+.dsh-mobile-control__pairing-details>summary,.dsh-mobile-control__install-details>summary{display:flex;align-items:center;gap:8px;min-height:40px;color:var(--dsw-alias-label-secondary,#cfd3d6);font-size:13px;font-weight:500;cursor:pointer;list-style:none}
+.dsh-mobile-control__pairing-details>summary::-webkit-details-marker,.dsh-mobile-control__install-details>summary::-webkit-details-marker{display:none}
+.dsh-mobile-control__pairing-details>summary::after,.dsh-mobile-control__install-details>summary::after{content:"";width:7px;height:7px;margin:-3px 2px 0 auto;border-right:1.5px solid var(--dsw-alias-label-tertiary,#adb2b8);border-bottom:1.5px solid var(--dsw-alias-label-tertiary,#adb2b8);transform:rotate(45deg);transition:transform .15s ease}
+.dsh-mobile-control__pairing-details[open]>summary::after,.dsh-mobile-control__install-details[open]>summary::after{transform:rotate(-135deg)}
+.dsh-mobile-control__pairing-details[open],.dsh-mobile-control__install-details[open]{padding-bottom:12px}
+.dsh-mobile-control__pairing-details .dsh-mobile-control__qr{margin:4px 0 10px;padding:0;border:0;background:transparent}
+.dsh-mobile-control__pairing-details .dsh-mobile-control__qr-placeholder{min-height:150px}
+.dsh-mobile-control__pairing-details .dsh-mobile-control__status{margin-top:8px}
+.dsh-mobile-control__pairing-details .dsh-mobile-control__actions{margin-top:10px}
+.dsh-mobile-control__install-details .dsh-mobile-control__app-downloads{grid-template-columns:1fr;padding:0 0 10px;border:0}
+.dsh-mobile-control__install-details .dsh-mobile-control__app-download{min-height:44px}
 `
 
 interface MobilePushEntryRuntime {
