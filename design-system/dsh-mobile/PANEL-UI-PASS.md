@@ -40,3 +40,7 @@ tokens calculés, géométrie DOM et captures.
 - L'instance web de vérification partage `$DSH_HOME/mobile-access` avec DSH Desktop : le fournisseur OpenTunnel peut y
   apparaître en timeout (conflit d'identité), sans lien avec le rendu du panneau.
 - Après mise à jour du plugin, rafraîchir la page DSH (Ctrl+R) pour charger le nouveau bundle client.
+
+## Passe complémentaire (19:35)
+- **OpenTunnel / DSH Remote est désormais la première carte** de la liste des méthodes de connexion, suivi de « Réseau local » puis Tailscale, cpolar, cloudflared, FRP, proxy inverse, iroh. Les cartes partagent maintenant le même groupe radio (navigation clavier cohérente) et le clic LAN est exclu du raccourci « passer en vue distante ».
+- **Carte « Réseau local » aérée** : padding 16 px, titre 14/650 avec marge basse, description et note avec interligne, champ/select espacés, boutons et statut séparés par 12–14 px.

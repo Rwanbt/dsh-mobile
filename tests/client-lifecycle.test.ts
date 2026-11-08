@@ -1288,7 +1288,7 @@ describe('mobile-control localization', () => {
 
   it('wires private-origin controls and protects edited forms from stale poll snapshots', () => {
     const source = readFileSync(new URL('../src/client.ts', import.meta.url), 'utf8')
-    expect(source).toContain('providerChoices.append(tailscaleChoice, opentunnelChoice, cpolarChoice, cloudflaredChoice, frpChoice, originChoice, irohChoice)')
+    expect(source).toContain('providerChoices.append(opentunnelChoice, lanChoice, tailscaleChoice, cpolarChoice, cloudflaredChoice, frpChoice, originChoice, irohChoice)')
     expect(source).toContain('/api/mobile-access/remote/origin/configure')
     expect(source).toContain('/api/mobile-access/remote/origin/purge')
     expect(source).toContain('if (!originFormDirty && !originFormBusy)')
@@ -2096,4 +2096,5 @@ describe('client extension manifest reconciliation', () => {
     expect(styles).toEqual(['both'])
   })
 })
+
 

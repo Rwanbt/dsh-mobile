@@ -1312,11 +1312,20 @@ function installControl(): { remove: () => void; toggle: () => void; isOpen: () 
   // iroh is a peer-to-peer transport with relay fallback, not a self-hosted inbound
   // endpoint: keep it beside the other managed channels instead of filing it under
   // "self-hosted" (own VPS / reverse proxy).
-  providerChoices.append(tailscaleChoice, opentunnelChoice, cpolarChoice, cloudflaredChoice, frpChoice, originChoice, irohChoice)
+  // LAN joins the channel list as a regular card (second, after OpenTunnel / DSH Remote),
+  // so "local" and "remote" share one left column and the right pane renders the selected
+  // channel. LAN keeps its own click handler and is excluded from the remote click shortcut.
+  const lanChoice = element('button', 'dsh-mobile-control__provider is-lan'); lanChoice.type = 'button'; lanChoice.setAttribute('role', 'radio'); lanChoice.setAttribute('aria-checked', 'true')
+  const lanChoiceTop = element('span', 'dsh-mobile-control__provider-top')
+  const lanChoiceName = element('strong'); lanChoiceName.textContent = t('lan')
+  const lanChoiceBadge = element('span', 'dsh-mobile-control__provider-badge'); lanChoiceBadge.textContent = t('builtIn')
+  const lanChoiceDescription = element('span', 'dsh-mobile-control__provider-description'); lanChoiceDescription.textContent = t('lanChoiceDescription')
+  lanChoiceTop.append(lanChoiceName, lanChoiceBadge); lanChoice.append(lanChoiceTop, lanChoiceDescription)
+  providerChoices.append(opentunnelChoice, lanChoice, tailscaleChoice, cpolarChoice, cloudflaredChoice, frpChoice, originChoice, irohChoice)
   // ARIA radios normally move focus and selection together, but choosing a provider switches
   // the remote channel behind a confirmation. The arrow keys therefore move focus only, Enter
   // or Space performs the guarded selection, and the group keeps a single tab stop.
-  const providerCardOrder = [tailscaleChoice, opentunnelChoice, cpolarChoice, cloudflaredChoice, frpChoice, originChoice, irohChoice]
+  const providerCardOrder = [opentunnelChoice, lanChoice, tailscaleChoice, cpolarChoice, cloudflaredChoice, frpChoice, originChoice, irohChoice]
   providerChoices.addEventListener('keydown', event => {
     const step = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1
       : event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 0
@@ -1328,15 +1337,7 @@ function installControl(): { remove: () => void; toggle: () => void; isOpen: () 
     event.preventDefault()
     providerCardOrder[next]?.focus()
   })
-  // LAN joins the channel list as the first entry, so "local" and "remote" share one
-  // left column and the right pane just renders whichever channel is selected.
-  const lanChoice = element('button', 'dsh-mobile-control__provider is-lan'); lanChoice.type = 'button'; lanChoice.setAttribute('role', 'radio'); lanChoice.setAttribute('aria-checked', 'true')
-  const lanChoiceTop = element('span', 'dsh-mobile-control__provider-top')
-  const lanChoiceName = element('strong'); lanChoiceName.textContent = t('lan')
-  const lanChoiceBadge = element('span', 'dsh-mobile-control__provider-badge'); lanChoiceBadge.textContent = t('builtIn')
-  const lanChoiceDescription = element('span', 'dsh-mobile-control__provider-description'); lanChoiceDescription.textContent = t('lanChoiceDescription')
-  lanChoiceTop.append(lanChoiceName, lanChoiceBadge); lanChoice.append(lanChoiceTop, lanChoiceDescription)
-  providerSection.append(providerHeading, lanChoice, providerChoices)
+  providerSection.append(providerHeading, providerChoices)
   const frpSetup = element('section', 'dsh-mobile-control__frp-setup'); frpSetup.hidden = true
   const frpSetupTitle = element('h3', 'dsh-mobile-control__section-title'); frpSetupTitle.textContent = t('prepareFrp')
   const frpStep1 = element('section', 'dsh-mobile-control__frp-step')
@@ -2031,7 +2032,10 @@ function installControl(): { remove: () => void; toggle: () => void; isOpen: () 
   }
   lanTab.addEventListener('click', () => { selectView('lan') })
   lanChoice.addEventListener('click', () => { selectView('lan') })
-  providerChoices.addEventListener('click', () => { selectView('remote'); loadRemote() })
+  providerChoices.addEventListener('click', event => {
+    if (event.target instanceof Element && event.target.closest('.dsh-mobile-control__provider.is-lan') !== null) return
+    selectView('remote'); loadRemote()
+  })
   remoteTab.addEventListener('click', () => { selectView('remote'); loadRemote() })
   selectView('lan')
   let returnFocus: HTMLElement | undefined
@@ -5722,6 +5726,16 @@ export const DSH_NATIVE_STYLES = `
 .dsh-mobile-control__devices p{margin:0;color:var(--dsw-alias-label-secondary,#cfd3d6);font-size:13px}
 .dsh-mobile-control__manage{min-height:36px;font-size:13px}
 .dsh-mobile-control__manage:disabled{opacity:.5;cursor:not-allowed}
+/* Local network setup card: DSH card padding and breathing room between blocks. */
+.dsh-mobile-control__lan-setup{padding:16px;margin:0 0 12px;border:var(--dshm-border);border-radius:var(--dshm-radius-card);background:var(--dsw-alias-bg-layer-2,#2c2c2e);box-sizing:border-box}
+.dsh-mobile-control__lan-setup>.dsh-mobile-control__section-title{font-size:14px;line-height:20px;font-weight:650;color:var(--dsw-alias-label-primary,#f9fafb);margin:0 0 6px;padding:0}
+.dsh-mobile-control__lan-setup>.dsh-mobile-control__intro{margin:0 0 14px;font-size:13px;line-height:1.5;color:var(--dsw-alias-label-secondary,#cfd3d6)}
+.dsh-mobile-control__lan-setup-form{display:flex;flex-direction:column;gap:12px}
+.dsh-mobile-control__lan-setup-form .dsh-mobile-control__field{display:flex;flex-direction:column;gap:6px;min-height:0;font-size:12.5px;color:var(--dsw-alias-label-secondary,#cfd3d6)}
+.dsh-mobile-control__lan-setup-form select{width:100%;height:36px;margin:0}
+.dsh-mobile-control__lan-setup-form .dsh-mobile-control__component-note{margin:0;font-size:12.5px;line-height:1.5;color:var(--dsw-alias-label-tertiary,#adb2b8)}
+.dsh-mobile-control__lan-setup-actions{display:flex;gap:8px;margin:0}
+.dsh-mobile-control__lan-setup>.dsh-mobile-control__status{margin:12px 0 0}
 @media (max-width:760px){
   .dsh-mobile-control__remote-columns{grid-template-columns:minmax(0,1fr)}
   .dsh-mobile-control__channel-pane{max-height:none;overflow:visible;padding-right:0}
