@@ -1358,8 +1358,15 @@ describe('HTTP gateway', () => {
     expect(italianScript.status).toBe(200)
     expect(italianScript.body).toContain('Abbinamento non riuscito')
 
-    const englishLogin = await request(instance.address().port, '/mobile-access/login', {
+    const frenchLogin = await request(instance.address().port, '/mobile-access/login', {
       headers: { ...base, accept: 'text/html', 'accept-language': 'fr-FR' },
+    })
+    expect(frenchLogin.status).toBe(200)
+    expect(frenchLogin.body).toContain('<html lang="fr-FR">')
+    expect(frenchLogin.body).toContain('Reconnecter cet appareil')
+
+    const englishLogin = await request(instance.address().port, '/mobile-access/login', {
+      headers: { ...base, accept: 'text/html', 'accept-language': 'en-US' },
     })
     expect(englishLogin.status).toBe(200)
     expect(englishLogin.body).toContain('Reconnect this device')

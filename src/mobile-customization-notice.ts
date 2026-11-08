@@ -15,7 +15,7 @@
 import type { MobileAssetLoadFailure } from './mobile-custom-assets.js'
 
 /** Copy for the notice, per locale, kept beside the existing dictionaries. */
-const NOTICE_COPY: Record<'en' | 'zh' | 'it', {
+const NOTICE_COPY: Record<'en' | 'zh' | 'it' | 'fr', {
   readonly title: Record<'authentication_required' | 'gateway_required' | 'other', string>
   readonly action: string
   readonly dismiss: string
@@ -28,6 +28,15 @@ const NOTICE_COPY: Record<'en' | 'zh' | 'it', {
     },
     action: 'Retry loading',
     dismiss: 'Dismiss',
+  },
+  fr: {
+    title: {
+      authentication_required: "L'authentification de l'appareil n'est pas disponible.",
+      gateway_required: "Les CSS, scripts et extensions mobiles personnalisés nécessitent l'entrée d'accès mobile associée.",
+      other: "La personnalisation mobile n'a pas pu être chargée.",
+    },
+    action: "Réessayez le chargement",
+    dismiss: "Rejeter",
   },
   zh: {
     title: {

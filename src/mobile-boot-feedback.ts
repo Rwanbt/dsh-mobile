@@ -1,6 +1,6 @@
 /** Framework-free feedback for a Gateway document whose application entry never renders. */
 type BootFailure = 'syntax_error' | 'script_execution_failed' | 'script_load_failed' | 'promise_rejected' | 'startup_stalled'
-type BootLocale = 'zh' | 'en' | 'it'
+type BootLocale = 'zh' | 'en' | 'it' | 'fr'
 
 const COPY = {
   en: {
@@ -13,6 +13,17 @@ const COPY = {
     help: 'Update the system WebView or its browser if an update is available. You can also use this computer’s mobile access address in a supported browser. Pairings have not been removed.',
     retry: 'Reload page',
     dismiss: 'Keep waiting',
+  },
+  fr: {
+    title: "DSH n'a pas pu démarrer",
+    syntax_error: "Un script de page n'a pas pu être lu par ce moteur Web. Ce client DSH peut nécessiter un moteur plus récent.",
+    script_execution_failed: "Un script de page s'est arrêté avant que DSH puisse afficher son interface.",
+    script_load_failed: "Un script de page requis n'a pas pu être chargé. Vérifiez la connexion à cet ordinateur.",
+    promise_rejected: "Le démarrage de la page a échoué avant que DSH puisse afficher son interface.",
+    startup_stalled: "DSH n'a pas encore affiché son interface. La connexion peut être lente ou ce moteur Web peut ne pas prendre en charge le client.",
+    help: "Mettez à jour le système WebView ou son navigateur si une mise à jour est disponible. Vous pouvez également utiliser l’adresse d’accès mobile de cet ordinateur dans un navigateur pris en charge. Les appariements n'ont pas été supprimés.",
+    retry: "Recharger la page",
+    dismiss: "Continue d'attendre",
   },
   zh: {
     title: 'DSH 未能启动',
@@ -48,7 +59,7 @@ const STYLE = `
 function locale(): BootLocale {
   for (const value of [...(navigator.languages ?? [navigator.language]), document.documentElement.lang]) {
     const language = value.toLowerCase().split(/[-_]/u)[0]
-    if (language === 'en' || language === 'it' || language === 'zh') return language
+    if (language === 'en' || language === 'it' || language === 'fr' || language === 'zh') return language
   }
   return 'en'
 }

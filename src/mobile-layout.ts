@@ -417,7 +417,7 @@ export function resolveMobileLayoutLanguage(
 ): MobileLayoutLanguage {
   return [documentLanguage, ...browserLanguages]
     .map(value => value.trim().toLowerCase().split(/[-_]/u)[0])
-    .find((value): value is MobileLayoutLanguage => value === 'it' || value === 'en' || value === 'zh') ?? 'en'
+    .find((value): value is MobileLayoutLanguage => value === 'fr' || value === 'it' || value === 'en' || value === 'zh') ?? 'en'
 }
 
 class MobileLayoutController {
@@ -612,7 +612,7 @@ html,body,#root{width:100%;height:100%;overflow:hidden}
 .dshm-shell[data-rightbar-fullscreen=true] .dshm-details{inset:0;width:100vw;max-width:100vw;box-shadow:none}
 .dshm-main>*,.dshm-main>*>*{min-width:0}
 .dshm-drawer{position:fixed;z-index:70;inset:0 auto 0 0;box-sizing:border-box;width:56px;max-width:100%;padding-top:env(safe-area-inset-top);overflow:hidden;background-color:Canvas;background-image:linear-gradient(var(--dsw-alias-bg-layer-1,#f8fafc),var(--dsw-alias-bg-layer-1,#f8fafc));box-shadow:none;will-change:width;transition:width 240ms cubic-bezier(.22,1,.36,1),box-shadow 240ms ease}
-.dshm-drawer[data-open=true]{width:min(88vw,340px);box-shadow:18px 0 46px rgb(15 23 42 / 18%)}
+.dshm-drawer[data-open=true]{width:min(88vw,340px);box-shadow:18px 0 46px rgb(0 0 0 / 14%)}
 .dshm-drawer[data-open=false]{pointer-events:auto;visibility:visible}
 .dshm-drawer>*{width:100%!important;height:100%!important;transform:translateX(-6px);opacity:.94;transition:transform 220ms cubic-bezier(.22,1,.36,1),opacity 160ms ease-out}
 .dshm-drawer[data-open=true]>*{transform:translateX(0);opacity:1}
@@ -625,14 +625,14 @@ html,body,#root{width:100%;height:100%;overflow:hidden}
 @media${FOLDED_RAIL_OFFSET_QUERY}{.dshm-shell:not([${WIDE_LAYOUT_ATTRIBUTE}="1"]):has(.dshm-drawer[data-open=false]:not([data-right-modal=true])) .dshm-main{margin-left:56px}}
 /* display:none also suppresses fixed descendants installed by the phone adapter. */
 .dshm-drawer[data-right-modal=true]{display:none!important}
-.dshm-details{position:fixed;z-index:80;inset:0 0 0 auto;box-sizing:border-box;width:min(94vw,460px);max-width:100%;padding-top:env(safe-area-inset-top);overflow:hidden;background-color:Canvas;background-image:linear-gradient(var(--dsw-alias-bg-layer-1,#fff),var(--dsw-alias-bg-layer-1,#fff));box-shadow:-18px 0 46px rgb(15 23 42 / 18%);transform:translateX(104%);transition:transform 190ms cubic-bezier(.22,1,.36,1)}
+.dshm-details{position:fixed;z-index:80;inset:0 0 0 auto;box-sizing:border-box;width:min(94vw,460px);max-width:100%;padding-top:env(safe-area-inset-top);overflow:hidden;background-color:Canvas;background-image:linear-gradient(var(--dsw-alias-bg-layer-1,#fff),var(--dsw-alias-bg-layer-1,#fff));box-shadow:-18px 0 46px rgb(0 0 0 / 14%);transform:translateX(104%);transition:transform 190ms cubic-bezier(.22,1,.36,1)}
 .dshm-details[data-open=true]{transform:translateX(0)}
 .dshm-details[data-open=false]{pointer-events:none;visibility:hidden;transition:transform 190ms cubic-bezier(.22,1,.36,1),visibility 0s linear 190ms}
 /* An absent marker is the narrow default: static fixtures and the first paint
    before React mounts keep the overlay geometry rather than a half-docked shell. */
 .dshm-shell:not([${WIDE_LAYOUT_ATTRIBUTE}="1"]) .dshm-details{width:100%;max-width:100%;box-shadow:none}
 .dshm-shell:not([${WIDE_LAYOUT_ATTRIBUTE}="1"]) .dshm-details [data-sidebar-right-toggle],.dshm-shell:not([${WIDE_LAYOUT_ATTRIBUTE}="1"]) .dshm-details [data-sidebar-right-mode]{min-width:48px;min-height:48px}
-.dshm-scrim{position:fixed;z-index:65;inset:0;border:0;background:rgb(15 23 42 / 40%);opacity:0;pointer-events:none;transition:opacity 180ms ease-out}
+.dshm-scrim{position:fixed;z-index:65;inset:0;border:0;background:var(--dsw-alias-bg-mask-1,rgb(0 0 0 / 28%));opacity:0;pointer-events:none;transition:opacity 180ms ease-out}
 .dshm-scrim[data-open=true]{opacity:1;pointer-events:auto}
 .dshm-overlay{position:fixed;z-index:90;inset:0;pointer-events:none}.dshm-overlay>*{pointer-events:auto}
 /* Reserve navigation space instead of covering a panel's own save controls. */
@@ -700,9 +700,50 @@ body:has(.dshm-shell) :is(input,textarea,[contenteditable=true],[contenteditable
 @media(pointer:coarse){
 .dshm-main[data-dsh-panel="1"] .dshm-mainContent:has(>[data-slot="main"]>:not([data-dsh-adapt="off"])):not(:has(>[data-slot="main"]>[data-dsh-adapt="off"])){overflow-y:auto;overscroll-behavior:contain}
 .dshm-main[data-dsh-panel="1"] .dshm-mainContent>[data-slot="main"]>:not([data-dsh-adapt="off"]){max-width:100%;box-sizing:border-box}
-.dshm-main[data-dsh-panel="1"] [data-slot="main"]>:not([data-dsh-adapt="off"]) :is(button,[role="button"],select,input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=hidden]):not([type=color]):not([type=file]):not([type=image])):not([role="switch"],[role="checkbox"],[role="radio"],[role="slider"],button[class*="_cardTitle"][class*="_cardOpen"],[data-dsh-adapt="off"],[data-dsh-adapt="off"] *){min-width:44px!important;min-height:44px!important}
+.dshm-main[data-dsh-panel="1"] [data-slot="main"]>:not([data-dsh-adapt="off"]) :is(button,[role="button"],select,input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=hidden]):not([type=color]):not([type=file]):not([type=image])):not([role="switch"],[role="checkbox"],[role="radio"],[role="slider"],[role="tab"],button[class*="_cardTitle"][class*="_cardOpen"],[data-dsh-adapt="off"],[data-dsh-adapt="off"] *){min-width:44px!important;min-height:44px!important}
 .dshm-main[data-dsh-panel="1"] [data-slot="main"]>:not([data-dsh-adapt="off"]) :is(button,[role="button"],a):not([data-dsh-adapt="off"],[data-dsh-adapt="off"] *){touch-action:manipulation}
+/* Plugins page header on phones: compact flex layout with the title and its
+   actions on one line, then the intro and full-width tabs. The stock 28px
+   tablist also clipped 44px pills, so both are normalized to 44px. */
+.dshm-main[data-dsh-panel="1"] [class*="pageBar"]{height:auto!important;min-height:0!important;position:static!important}
+.dshm-main[data-dsh-panel="1"] [class*="pageHead"]{display:flex!important;flex-wrap:wrap!important;align-items:center!important;column-gap:8px!important;row-gap:8px!important;height:auto!important;min-height:0!important;clip-path:none!important;box-sizing:border-box!important;width:100%!important;margin:0!important;padding:16px 0 4px 0!important}
+/* DSH positions the plugin-page header parts absolutely from JS; neutralize
+   that positioning so the flex layout above owns the geometry. */
+.dshm-main[data-dsh-panel="1"] [class*="pageHead"] [class*="pageTitle"],
+.dshm-main[data-dsh-panel="1"] [class*="pageHead"] [class*="pageIntro"],
+.dshm-main[data-dsh-panel="1"] [class*="pageHead"] [class*="toolbar"],
+.dshm-main[data-dsh-panel="1"] [class*="pageHead"] [class*="pageTabs"]{position:static!important;top:auto!important;left:auto!important;right:auto!important;bottom:auto!important;inset:auto!important;translate:none!important;transform:none!important;width:auto!important;max-width:100%!important;margin:0!important}
+.dshm-main[data-dsh-panel="1"] [class*="pageTitle"]{order:0!important;flex:1 1 auto!important;min-width:0!important;margin:0!important;align-self:center!important;text-align:left!important}
+.dshm-main[data-dsh-panel="1"] [class*="pageHeading"]{order:0!important;flex:0 0 100%!important;min-width:0!important;width:100%!important;margin:0!important;padding:0!important;box-sizing:border-box!important}
+.dshm-main[data-dsh-panel="1"] [class*="pageHead"] [class*="toolbar"]{order:2!important;flex:0 0 auto!important;height:44px!important;min-height:44px!important;margin-left:auto!important;align-items:center!important;justify-content:flex-end!important;gap:14.5px!important}
+.dshm-main[data-dsh-panel="1"] [class*="pageIntro"]{order:2!important;flex:1 1 100%!important;height:auto!important;min-height:0!important}
+.dshm-main[data-dsh-panel="1"] [class*="pageTabs"]{order:1!important;flex:0 1 auto!important;min-width:0!important;max-width:100%!important}
+.dshm-main[data-dsh-panel="1"] [class*="pageTabList"]{--segmented-tabs-inset:4px;position:relative!important;display:grid!important;grid-template-columns:1fr 1fr!important;grid-auto-flow:column!important;width:192px!important;max-width:100%!important;height:44px!important;min-height:44px!important;box-sizing:border-box!important;padding:4px!important;gap:0!important;border-radius:16px!important;background:var(--dsw-alias-bg-module-platform,rgba(255,255,255,0.06))!important;overflow:visible!important;scrollbar-width:none}
+.dshm-main[data-dsh-panel="1"] [class*="pageTabList"]::-webkit-scrollbar{display:none}
+/* Keep DSH's original gray segmented container and its sliding indicator:
+   equal 1fr cells make the indicator's half-width formula line up again. */
+.dshm-main[data-dsh-panel="1"] [class*="pageTabList"]>[class*="_indicator"]{display:block!important}
+.dshm-main[data-dsh-panel="1"] [class*="pageTabList"]>[role="tab"]{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-width:0!important;height:36px!important;min-height:36px!important;padding:0 12px!important;border-radius:12px!important;line-height:1.2!important;white-space:nowrap!important;background:transparent!important;color:var(--dsw-alias-label-secondary,#cfd3d6)!important}
+.dshm-main[data-dsh-panel="1"] [class*="pageTabList"]>[role="tab"][aria-selected="true"]{color:var(--dsw-alias-label-primary,#f9fafb)!important}
+.dshm-main[data-dsh-panel="1"] [class*="pageHead"] [class*="addButton"],.dshm-main[data-dsh-panel="1"] [class*="pageHead"] [class*="addGroup"]{height:44px!important;max-height:44px!important;min-height:44px!important;box-sizing:border-box!important;align-self:center!important;margin-top:0!important;margin-bottom:0!important}
+.dshm-main[data-dsh-panel="1"] [class*="pageHead"] [class*="addButton"]{border-color:var(--dsw-alias-border-l3,rgba(255,255,255,0.16))!important}
+.dshm-main[data-dsh-panel="1"] [class*="pageHead"] [class*="addGroup"]>*{height:44px!important;max-height:44px!important;min-height:44px!important;box-sizing:border-box!important;margin-top:0!important;margin-bottom:0!important}
+/* Settings shell on phones: the stock two-column rail+content grid squeezes the
+   account card into word-by-word wrapping. Use one full-width column and stack
+   the account identity above its action link. */
+.dshm-main[data-dsh-panel="1"] [class*="_panel"]:has(> [class*="_options"]){grid-template-columns:minmax(0,1fr)!important}
+.dshm-main[data-dsh-panel="1"] [class*="_options"]{box-sizing:border-box!important;width:100%!important;min-width:0!important;padding-left:12px!important;padding-right:12px!important}
+.dshm-main[data-dsh-panel="1"] [class*="_card"]:has(> [class*="_accountInfo"]){flex-direction:column!important;align-items:stretch!important;gap:10px!important}
+.dshm-main[data-dsh-panel="1"] [class*="_card"]:has(> [class*="_accountInfo"]) > [class*="_accountInfo"]{align-self:flex-start!important;max-width:100%!important;overflow-wrap:anywhere!important}
+.dshm-main[data-dsh-panel="1"] [class*="_card"]:has(> [class*="_accountInfo"]) > :not([class*="_accountInfo"]){min-width:0!important;max-width:100%!important}
 }
+/* The Settings shell portals its overlay to <body>, so these narrow-width
+   fixes cannot be scoped under the mobile main column. */
+html.dsh-native-mobile-active [class*="_panel"]:has([class*="_options"]){grid-template-columns:minmax(0,1fr)!important}
+html.dsh-native-mobile-active [class*="_options"]{box-sizing:border-box!important;width:100%!important;min-width:0!important;padding-left:12px!important;padding-right:12px!important}
+html.dsh-native-mobile-active [class*="_card"]:has(> [class*="_accountInfo"]){flex-direction:column!important;align-items:stretch!important;gap:10px!important}
+html.dsh-native-mobile-active [class*="_card"]:has(> [class*="_accountInfo"]) > [class*="_accountInfo"]{align-self:flex-start!important;max-width:100%!important;overflow-wrap:anywhere!important}
+html.dsh-native-mobile-active [class*="_card"]:has(> [class*="_accountInfo"]) > :not([class*="_accountInfo"]){min-width:0!important;max-width:100%!important}
 `
 
 function MobileAppFrame(props: MobileRootProps & {

@@ -882,13 +882,13 @@ class MainActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
-        heading.addView(textView(R.string.paired_devices_title, 30f, Typeface.BOLD), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        heading.addView(textView(R.string.paired_devices_title, 20f, Typeface.BOLD), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         heading.addView(toolbarIconButton(R.drawable.ic_settings, R.string.device_list_settings).apply {
             setOnClickListener { showDeviceListSettings() }
         }, LinearLayout.LayoutParams(dp(48), dp(48)))
         card.addView(heading)
         card.addView(spacer(8))
-        deviceListStatus = textView(R.string.paired_devices_description, 16f, Typeface.NORMAL, R.color.app_secondary).apply {
+        deviceListStatus = textView(R.string.paired_devices_description, 14f, Typeface.NORMAL, R.color.app_secondary).apply {
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         }
         card.addView(deviceListStatus)
@@ -901,7 +901,7 @@ class MainActivity : Activity() {
         }
         card.addView(rows)
         card.addView(spacer(18))
-        card.addView(primaryButton(R.string.add_computer, 52) { showConnectionChoices() }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        card.addView(primaryButton(R.string.add_computer, 48) { showConnectionChoices() }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         refreshDeviceStatuses(devices)
     }
 
@@ -910,7 +910,7 @@ class MainActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(16), dp(12), dp(8), dp(12))
-            background = roundedRipple(getColor(R.color.app_surface), 16)
+            background = roundedRipple(getColor(R.color.app_surface), 16, bordered = true)
             isClickable = true
             isFocusable = true
             contentDescription = getString(R.string.open_paired_device, device.displayName)
@@ -918,7 +918,7 @@ class MainActivity : Activity() {
         val details = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         val title = TextView(this).apply {
             text = device.displayName
-            textSize = 17f
+            textSize = 16f
             setTypeface(Typeface.DEFAULT, Typeface.BOLD)
             setTextColor(getColor(R.color.app_foreground))
             maxLines = 1
@@ -934,6 +934,8 @@ class MainActivity : Activity() {
         val status = TextView(this).apply {
             textSize = 12f
             setTextColor(getColor(R.color.app_secondary))
+            maxLines = 2
+            ellipsize = TextUtils.TruncateAt.END
             deviceStatusViews[device.key] = this
             setDeviceStatusText(this, device)
         }
@@ -1284,7 +1286,6 @@ class MainActivity : Activity() {
     private fun showIconSettings() {
         val keys = LauncherIconPolicy.icons.map { it.key }
         val labels = arrayOf(
-            getString(R.string.icon_choice_whale_girl),
             getString(R.string.icon_choice_official_whale),
             getString(R.string.icon_choice_official_whale_dark),
             getString(R.string.icon_choice_official_whale_teal),
@@ -1327,6 +1328,7 @@ class MainActivity : Activity() {
             showDeviceList()
             deviceListStatus?.apply {
                 setText(R.string.connection_failed)
+                setTextColor(getColor(R.color.app_error))
                 visibility = View.VISIBLE
             }
         }
@@ -1348,9 +1350,9 @@ class MainActivity : Activity() {
         failureDialog?.dismiss()
 
         val card = createSetupCard(surface = false)
-        card.addView(textView(R.string.connection_center_title, 30f, Typeface.BOLD))
+        card.addView(textView(R.string.connection_center_title, 20f, Typeface.BOLD))
         card.addView(spacer(8))
-        card.addView(textView(R.string.connection_center_description, 16f, Typeface.NORMAL, R.color.app_secondary))
+        card.addView(textView(R.string.connection_center_description, 14f, Typeface.NORMAL, R.color.app_secondary))
         val restoreStatus = textView(
             R.string.background_restore_running,
             14f,
@@ -1399,11 +1401,11 @@ class MainActivity : Activity() {
         LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(18), dp(20), dp(18))
-            background = roundedRipple(getColor(R.color.app_surface), 18)
+            background = roundedRipple(getColor(R.color.app_surface), 16, bordered = true)
             isClickable = true
             isFocusable = true
             contentDescription = getString(titleResource)
-            addView(textView(titleResource, 18f, Typeface.BOLD))
+            addView(textView(titleResource, 16f, Typeface.BOLD))
             addView(spacer(6))
             addView(textView(descriptionResource, 14f, Typeface.NORMAL, R.color.app_secondary))
             if (trusted) {
@@ -1412,12 +1414,14 @@ class MainActivity : Activity() {
                     orientation = LinearLayout.HORIZONTAL
                     gravity = Gravity.CENTER_VERTICAL
                     addView(
-                        textView(R.string.paired_device_ready, 13f, Typeface.BOLD, R.color.app_accent),
+                        textView(R.string.paired_device_ready, 13f, Typeface.BOLD, R.color.app_accent).apply { maxLines = 1; ellipsize = TextUtils.TruncateAt.END },
                         LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f),
                     )
                     addView(textView(R.string.reconfigure_connection, 13f, Typeface.BOLD, R.color.app_accent).apply {
                         isClickable = true
                         isFocusable = true
+                        minHeight = dp(48)
+                        gravity = Gravity.CENTER_VERTICAL
                         setPadding(dp(12), dp(6), 0, dp(6))
                         setOnClickListener { configure() }
                     })
@@ -1460,15 +1464,15 @@ class MainActivity : Activity() {
         failureDialog?.dismiss()
 
         val card = createSetupCard(surface = false)
-        card.addView(textView(R.string.discovery_title, 30f, Typeface.BOLD))
+        card.addView(textView(R.string.discovery_title, 20f, Typeface.BOLD))
         card.addView(spacer(10))
-        card.addView(textView(R.string.discovery_description, 16f, Typeface.NORMAL, R.color.app_secondary))
+        card.addView(textView(R.string.discovery_description, 14f, Typeface.NORMAL, R.color.app_secondary))
         card.addView(spacer(28))
 
         val discovery = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(20), dp(20), dp(20))
-            background = roundedSurface(getColor(R.color.app_surface_translucent), 20).apply {
+            background = roundedSurface(getColor(R.color.app_surface_translucent), 16).apply {
                 setStroke(dp(1), getColor(R.color.app_border))
             }
         }
@@ -1480,8 +1484,8 @@ class MainActivity : Activity() {
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         }
         val results = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        val scanQr = primaryButton(R.string.scan_action, 56) { openScanner() }
-        val scan = primaryButton(R.string.scan_lan, 56) { scanForHarnesses(status, this, results) }
+        val scanQr = primaryButton(R.string.scan_action, 48) { openScanner() }
+        val scan = primaryButton(R.string.scan_lan, 48) { scanForHarnesses(status, this, results) }
         val manual = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -1494,7 +1498,7 @@ class MainActivity : Activity() {
             R.string.gateway_label,
         )
         val manualAction = { connectManual(manualField.text.toString(), status) }
-        val manualConnect = secondaryButton(R.string.connect, 52) { manualAction() }.apply {
+        val manualConnect = secondaryButton(R.string.connect, 48) { manualAction() }.apply {
             setPadding(dp(12), 0, dp(12), 0)
         }
         manualField.setOnEditorActionListener { _, actionId, _ ->
@@ -1531,11 +1535,11 @@ class MainActivity : Activity() {
         cancelAutomaticRecovery()
         failureDialog?.dismiss()
         val card = createSetupCard(surface = false)
-        card.addView(textView(R.string.iroh_access_title, 30f, Typeface.BOLD))
+        card.addView(textView(R.string.iroh_access_title, 20f, Typeface.BOLD))
         card.addView(spacer(8))
-        card.addView(textView(R.string.iroh_pairing_help, 16f, Typeface.NORMAL, R.color.app_secondary))
+        card.addView(textView(R.string.iroh_pairing_help, 14f, Typeface.NORMAL, R.color.app_secondary))
         card.addView(spacer(20))
-        card.addView(secondaryButton(R.string.scan_action, 52) { openScanner() })
+        card.addView(secondaryButton(R.string.scan_action, 48) { openScanner() })
         card.addView(spacer(16))
         card.addView(textView(R.string.iroh_pairing_label, 14f, Typeface.BOLD))
         card.addView(spacer(8))
@@ -1556,8 +1560,9 @@ class MainActivity : Activity() {
         val status = textView(R.string.iroh_pairing_private, 14f, Typeface.NORMAL, R.color.app_secondary).apply {
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         }
-        val connect = primaryButton(R.string.iroh_connect_action, 52) { }
+        val connect = primaryButton(R.string.iroh_connect_action, 48) { }
         fun submit() {
+            hideSoftKeyboard()
             val descriptor = try { IrohPairingDescriptor.parse(input.text.toString().trim()) } catch (_: Exception) {
                 input.error = getString(R.string.iroh_pairing_invalid)
                 status.setTextColor(getColor(R.color.app_error))
@@ -1664,14 +1669,14 @@ class MainActivity : Activity() {
         failureDialog?.dismiss()
 
         val card = createSetupCard(surface = false)
-        card.addView(textView(R.string.remote_setup_title, 30f, Typeface.BOLD))
+        card.addView(textView(R.string.remote_setup_title, 20f, Typeface.BOLD))
         card.addView(spacer(10))
-        card.addView(textView(R.string.remote_setup_description, 16f, Typeface.NORMAL, R.color.app_secondary))
+        card.addView(textView(R.string.remote_setup_description, 14f, Typeface.NORMAL, R.color.app_secondary))
         card.addView(spacer(24))
         val remote = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(20), dp(20), dp(20))
-            background = roundedSurface(getColor(R.color.app_surface_translucent), 20).apply {
+            background = roundedSurface(getColor(R.color.app_surface_translucent), 16).apply {
                 setStroke(dp(1), getColor(R.color.app_border))
             }
         }
@@ -1679,7 +1684,7 @@ class MainActivity : Activity() {
         remote.addView(spacer(8))
         remote.addView(textView(R.string.remote_step_two, 14f, Typeface.NORMAL, R.color.app_secondary))
         remote.addView(spacer(18))
-        remote.addView(primaryButton(R.string.scan_remote_qr, 56) { openScanner() })
+        remote.addView(primaryButton(R.string.scan_remote_qr, 48) { openScanner() })
         remote.addView(spacer(18))
         val status = TextView(this).apply {
             setTextColor(getColor(R.color.app_secondary))
@@ -1709,6 +1714,7 @@ class MainActivity : Activity() {
     }
 
     private fun connectRemoteLink(raw: String, status: TextView) {
+        hideSoftKeyboard()
         val connection = GatewayConnection.parse(raw.trim())
         if (connection == null || !isRemoteTunnelHost(connection.origin.host)
             || GatewayUrlPolicy.pairingKey(raw.trim()) == null) {
@@ -1849,7 +1855,7 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER
             setPadding(dp(32), dp(32), dp(32), dp(32))
         }
-        content.addView(textView(R.string.restoring_trust, 16f, Typeface.NORMAL, R.color.app_secondary).apply {
+        content.addView(textView(R.string.restoring_trust, 14f, Typeface.NORMAL, R.color.app_secondary).apply {
             gravity = Gravity.CENTER
         })
         root.addView(content, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
@@ -1865,16 +1871,18 @@ class MainActivity : Activity() {
         showingSetup = true
         setupBackAction = if (accessMode == AccessMode.LAN) ::showSetup else ::showRemoteSetup
         val card = createSetupCard()
-        card.addView(textView(R.string.pairing_title, 30f, Typeface.BOLD))
+        card.addView(textView(R.string.pairing_title, 20f, Typeface.BOLD))
         card.addView(spacer(12))
-        card.addView(textView(R.string.pairing_description, 16f, Typeface.NORMAL, R.color.app_secondary))
+        card.addView(textView(R.string.pairing_description, 14f, Typeface.NORMAL, R.color.app_secondary))
         card.addView(spacer(24))
         card.addView(textView(R.string.selected_harness, 14f, Typeface.BOLD))
         card.addView(spacer(6))
         card.addView(TextView(this).apply {
             text = "${harness.deviceName}\n${harness.origin.serialized}"
-            textSize = 16f
+            textSize = 15f
             setTextColor(getColor(R.color.app_foreground))
+            maxLines = 3
+            ellipsize = TextUtils.TruncateAt.END
             setTextIsSelectable(true)
         })
         card.addView(spacer(24))
@@ -1897,7 +1905,7 @@ class MainActivity : Activity() {
             visibility = View.GONE
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         }
-        val connect = primaryButton(R.string.connect, 52) { connect(harness, pairing, status, this) }
+        val connect = primaryButton(R.string.connect, 48) { connect(harness, pairing, status, this) }
         pairing.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 connect(harness, pairing, status, connect)
@@ -1939,7 +1947,7 @@ class MainActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             if (surface) {
                 setPadding(dp(24), dp(24), dp(24), dp(24))
-                background = roundedSurface(getColor(R.color.app_surface), 20).apply {
+                background = roundedSurface(getColor(R.color.app_surface), 16).apply {
                     setStroke(dp(1), getColor(R.color.app_border))
                 }
             }
@@ -1984,6 +1992,7 @@ class MainActivity : Activity() {
 
     /** Reconnect to a manually entered origin, falling back to pairing when unknown. */
     private fun connectManual(raw: String, status: TextView) {
+        hideSoftKeyboard()
         val origin = parseManualOrigin(raw)
         if (origin == null) {
             status.setTextColor(getColor(R.color.app_error))
@@ -2015,6 +2024,7 @@ class MainActivity : Activity() {
         DiscoveredHarness(deviceName = "DeepSeek Harness", origin = origin, instanceId = "")
 
     private fun connect(harness: DiscoveredHarness, pairing: EditText, status: TextView, button: Button) {
+        hideSoftKeyboard()
         if (pairingAttemptGate.busy) return
         if (!prepareCredentialStorage()) {
             status.setText(R.string.device_storage_unavailable)
@@ -2366,6 +2376,9 @@ class MainActivity : Activity() {
                             isAllCaps = false
                             gravity = Gravity.START or Gravity.CENTER_VERTICAL
                             minHeight = dp(68)
+                            maxLines = 2
+                            ellipsize = TextUtils.TruncateAt.END
+                            setPadding(dp(16), dp(12), dp(16), dp(12))
                             textSize = 15f
                             setTextColor(getColor(R.color.app_foreground))
                             backgroundTintList = null
@@ -3668,12 +3681,31 @@ class MainActivity : Activity() {
         }
         nativeBridge?.dispose()
         val bridgeState = restoredNativeBridgeState.also { restoredNativeBridgeState = null }
+        var lastWebChromeColor = initialChromeColor
+        var chromeSplitActive = false
         nativeBridge = (stagedBrowser?.bridge ?: NativeBridge(this, browser, origin, bridgeState)).also { bridge ->
             bridge.onPageBackgroundColor = { color ->
-                root.setBackgroundColor(color)
-                statusBarBackdrop.setBackgroundColor(color)
-                if (connectionWaitingView == null || connectionPageVisible) applyStatusBarIconContrast(window, color)
+                lastWebChromeColor = color
+                if (!chromeSplitActive) {
+                    root.setBackgroundColor(color)
+                    statusBarBackdrop.setBackgroundColor(color)
+                    if (connectionWaitingView == null || connectionPageVisible) applyStatusBarIconContrast(window, color)
+                }
                 preferences.edit().putInt(PREFERENCE_WEB_CHROME_COLOR, color).apply()
+            }
+            bridge.onPageChromeSplit = { fraction, left, right ->
+                android.util.Log.d("DSHMobile", "apply chrome split fraction=" + fraction + " left=" + left + " right=" + right)
+                if (fraction < 0f) {
+                    chromeSplitActive = false
+                    root.setBackgroundColor(lastWebChromeColor)
+                    statusBarBackdrop.setBackgroundColor(lastWebChromeColor)
+                    applyStatusBarIconContrast(window, lastWebChromeColor)
+                } else {
+                    chromeSplitActive = true
+                    root.background = SplitChromeDrawable(fraction, left, right)
+                    statusBarBackdrop.background = SplitChromeDrawable(fraction, left, right)
+                    applyStatusBarIconContrast(window, right)
+                }
             }
             bridge.onDeviceRevoked = ::handleDeviceRevoked
             bridge.onRenewSession = { requestId, isCurrent, done ->
@@ -4102,10 +4134,11 @@ class MainActivity : Activity() {
     private fun primaryButton(textResource: Int, minHeightDp: Int, onClick: Button.() -> Unit): Button = Button(this).apply {
         setText(textResource)
         isAllCaps = false
-        textSize = 17f
+        textSize = 16f
         setTypeface(Typeface.DEFAULT, Typeface.BOLD)
         minHeight = dp(minHeightDp)
         backgroundTintList = null
+        stateListAnimator = null
         background = roundedRipple(getColor(R.color.app_accent), 16)
         setTextColor(getColor(R.color.app_on_accent))
         setOnClickListener { onClick() }
@@ -4119,6 +4152,7 @@ class MainActivity : Activity() {
         minHeight = dp(minHeightDp)
         setTextColor(getColor(R.color.app_foreground))
         backgroundTintList = null
+        stateListAnimator = null
         background = roundedRipple(getColor(R.color.app_surface_tinted), 12)
         setOnClickListener { onClick() }
     }
@@ -4135,6 +4169,7 @@ class MainActivity : Activity() {
         this.inputType = inputType
         this.imeOptions = imeOptions
         isSingleLine = true
+        ellipsize = TextUtils.TruncateAt.END
         minHeight = dp(minHeightDp)
         textSize = 16f
         setPadding(dp(16), 0, dp(16), 0)
@@ -4142,13 +4177,20 @@ class MainActivity : Activity() {
         this.contentDescription = getString(contentDescriptionResource)
     }
 
+    /** Dismiss the soft keyboard before a submitted form swaps to a progress/error state. */
+    private fun hideSoftKeyboard() {
+        currentFocus?.let { focused ->
+            getSystemService(InputMethodManager::class.java).hideSoftInputFromWindow(focused.windowToken, 0)
+        }
+    }
     private fun roundedSurface(color: Int, radiusDp: Int): GradientDrawable = GradientDrawable().apply {
         setColor(color)
         cornerRadius = dp(radiusDp).toFloat()
     }
 
-    private fun roundedRipple(color: Int, radiusDp: Int): RippleDrawable {
+    private fun roundedRipple(color: Int, radiusDp: Int, bordered: Boolean = false): RippleDrawable {
         val content = roundedSurface(color, radiusDp)
+        if (bordered) content.setStroke(dp(1), getColor(R.color.app_border))
         return RippleDrawable(
             ColorStateList.valueOf(getColor(R.color.app_border)),
             content,

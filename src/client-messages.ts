@@ -1,6 +1,15 @@
-export type MobileControlLocale = 'it' | 'en' | 'zh'
+import {
+  FR_DIAGNOSTIC_NETWORK_MESSAGES,
+  FR_DIAGNOSTIC_REASON_MESSAGES,
+  FR_DIAGNOSTIC_SCOPE_MESSAGES,
+  FR_LOCALIZED_DIAGNOSTIC_COPY,
+  FR_MESSAGES,
+} from './client-messages-fr.js'
+
+export type MobileControlLocale = 'it' | 'en' | 'zh' | 'fr'
 
 const frpFormMessages = {
+  fr: { ...FR_MESSAGES },
   en: {
     frpServerAddressInvalid: 'Enter the frps IP address or full hostname only, without https://, a port, or a path.',
     frpServerPortInvalid: 'Enter the frps control port as a whole number from 1 to 65535.',
@@ -47,6 +56,13 @@ const storageMessages = {
 
 /** Desktop-only stopped-worker recovery, independent of remote provider state. */
 export const EXTENSION_RECOVERY_MESSAGES = {
+  fr: {
+    extensionRecoveryTitle: 'Une extension doit redémarrer', extensionRecoveryHelp: 'Seule l’extension arrêtée redémarre. Les actions inachevées ne sont pas relancées.',
+    extensionRecoveryRestart: 'Redémarrer', extensionRecoveryRestarting: 'Redémarrage…', extensionRecoveryRestartAria: 'Redémarrer l’extension {name}',
+    extensionRecoveryConfirm: 'Redémarrer l’extension « {name} » ? Les actions inachevées ne seront pas relancées. Les modifications déjà effectuées ne seront pas annulées.',
+    extensionRecoveryRefresh: 'Vérifier à nouveau', extensionRecoveryLoadFailed: 'Impossible de vérifier l’état de l’extension. Vérifiez à nouveau avant de redémarrer.',
+    extensionRecoveryFailed: 'L’extension n’a pas redémarré. Vérifiez sa configuration, puis réessayez.', extensionRecoveryChanged: 'Les fichiers de l’extension ont changé. Vérifiez les modifications et rechargez l’extension avant de réessayer.',
+  },
   en: {
     extensionRecoveryTitle: 'An extension needs a restart', extensionRecoveryHelp: 'Only the stopped extension restarts. Unfinished actions are not retried.',
     extensionRecoveryRestart: 'Restart', extensionRecoveryRestarting: 'Restarting…', extensionRecoveryRestartAria: 'Restart extension {name}',
@@ -71,6 +87,7 @@ export const EXTENSION_RECOVERY_MESSAGES = {
 } satisfies Record<MobileControlLocale, Record<string, string>>
 
 export const MOBILE_CONTROL_MESSAGES = {
+  fr: { ...FR_MESSAGES },
   en: {
     ...frpFormMessages.en,
     mobileAccess: 'Mobile access', collapseMobileAccess: 'Collapse Mobile access', downloadAndroid: 'Download latest Android app', downloadAndroidVersion: 'Download latest Android app · v{version}', downloadAndroidIroh: 'Download full APK (iroh)', downloadAndroidIrohAria: 'Download the full Android APK that includes iroh', downloadAndroidIrohVersion: 'Download full APK (iroh) · v{version}', downloadAndroidVersionSize: 'Download latest Android app · v{version} · {size} MB', downloadAndroidIrohVersionSize: 'Download full APK (iroh) · v{version} · {size} MB', downloadAndroidAria: 'Download the latest Android app from GitHub Releases', downloadAndroidVersionAria: 'Download Android app v{version} from GitHub Releases', updatePlugin: 'Update plugin', updatePluginAria: 'Update DSH Mobile to v{version}', updatingPlugin: 'Updating…', pluginUpdatedRestart: 'Updated to v{version}. Restart DSH to apply it.', pluginUpdateFailed: 'Update failed: {error}', updateTo: 'Update to v{version}', updateNotice: 'Restart DSH after installing. Existing apps and paired devices need no re-pairing; unsure about the desktop version? Check the README compatibility table.', updateNotesEmpty: 'No release notes fetched — updating is still fine; full details on the GitHub Release page.', updateNow: 'Update now', updateLater: 'Not now',
@@ -283,6 +300,7 @@ Object.assign(MOBILE_CONTROL_MESSAGES.zh, {
 })
 
 export const LOCALIZED_DIAGNOSTIC_COPY = {
+  fr: FR_LOCALIZED_DIAGNOSTIC_COPY,
   en: {
     versions: 'Installed plugin, DSH, and minimum Android app versions are shown.',
     networkOk: 'The configured local network adapter is available.', networkError: 'The saved local network adapter is unavailable.', networkInfo: 'A fixed local network configuration is in use.', networkAction: 'Run dsh-mobile setup again.',
@@ -734,6 +752,7 @@ Object.assign(MOBILE_CONTROL_MESSAGES.zh, {
 
 /** Measurement boundaries shared by diagnostic cards and copied reports. */
 export const DIAGNOSTIC_SCOPE_MESSAGES = {
+  fr: { ...FR_DIAGNOSTIC_SCOPE_MESSAGES },
   en: { scripts: 'Page scripts', configuration: 'Configuration', computer: 'Computer-side check', phone: 'Phone not tested', versions: 'Version information', provider: 'Local channel state', dns: 'System DNS', coverage: 'Computer-side checks only. Phone reachability, authenticated pages, resources and WebSockets have not been verified.' },
   it: { scripts: 'Script pagina', configuration: 'Configurazione', computer: 'Controllo dal computer', phone: 'Telefono non verificato', versions: 'Informazioni versioni', provider: 'Stato del canale locale', dns: 'DNS di sistema', coverage: 'Solo controlli dal computer. Raggiungibilità dal telefono, pagine autenticate, risorse e WebSocket non verificati.' },
   zh: { scripts: '页面脚本', configuration: '配置信息', computer: '电脑侧检查', phone: '手机尚未验证', versions: '版本信息', provider: '本机通道状态', dns: '系统 DNS', coverage: '仅为电脑侧检查。手机可达性、认证页面、资源加载和 WebSocket 尚未验证。' },
@@ -741,6 +760,7 @@ export const DIAGNOSTIC_SCOPE_MESSAGES = {
 
 /** Fixed DNS/egress observations never imply acceptance from another network. */
 export const DIAGNOSTIC_NETWORK_MESSAGES = {
+  fr: { ...FR_DIAGNOSTIC_NETWORK_MESSAGES },
   en: {
     'remote-service-ready': ['{provider} reports its local component ready; public and phone paths are not verified.', ''],
     'plugin-inspection-unavailable': ['Active page scripts could not be inspected; absence of a competing remote channel is unverified.', 'Other network checks are independent. Keep the reproduction environment and inspect the relevant plugins.'],
@@ -795,6 +815,7 @@ export const DIAGNOSTIC_NETWORK_MESSAGES = {
 } as const
 
 export const DIAGNOSTIC_REASON_MESSAGES = {
+  fr: { ...FR_DIAGNOSTIC_REASON_MESSAGES },
   en: {
     'lan-setup-required': ['Local network setup has not been completed.', 'Return to Local network and choose a network to finish setup.'],
     'versions-current': ['Installed plugin, DSH, and minimum Android app versions are shown.', ''],
@@ -965,4 +986,67 @@ Object.assign(MOBILE_CONTROL_MESSAGES.it, {
   macPermissionSteps: 'Impostazioni di Sistema → Privacy e sicurezza → Accesso completo al disco → attiva DeepSeek Harness',
   macPermissionOpen: 'Apri Impostazioni di Sistema',
   macPermissionDismiss: 'Ho capito',
+})
+
+Object.assign(MOBILE_CONTROL_MESSAGES.en, {
+  frpTokenSaved: 'Saved securely; leave blank to keep it', vpsRedeploy: 'Repair or redeploy VPS',
+  opentunnelName: 'OpenTunnel / DSH Remote', opentunnelBadge: 'No domain or account',
+  opentunnelDescription: 'Managed public address through the OpenTunnel relay. The plugin creates the tunnel and starts the local gateway automatically.',
+  opentunnelIntro: 'OpenTunnel gives this computer a stable public HTTPS address and starts the DSH mobile gateway on 127.0.0.1:3444. The pairing QR appears as soon as the tunnel is ready.',
+  opentunnelTunnelStarting: 'Creating the OpenTunnel tunnel and its certificate…', opentunnelGatewayStarting: 'Starting the local DSH gateway…',
+  opentunnelReady: 'OpenTunnel is ready. Scan the pairing QR from Remote access in the app.',
+  remoteUnavailableOpentunnel: 'OpenTunnel is not running yet.',
+  remoteStartingOpentunnel: 'Creating the OpenTunnel tunnel and its certificate…', remoteConnectingOpentunnel: 'Starting the local DSH gateway…',
+  switchingOpentunnel: 'Switching to OpenTunnel…', reconnectingOpentunnel: 'Reconnecting the OpenTunnel tunnel…',
+  resetOpentunnelConfirm: 'Disable OpenTunnel remote access and remove all remote paired devices? The tunnel identity and the saved local settings are kept.',
+  opentunnelUrlLabel: 'Public address',
+  opentunnelSdkMissing: 'The OpenTunnel SDK is unavailable. Reinstall the complete plugin package.',
+  opentunnelConnectFailed: 'Could not connect to the OpenTunnel relay. Check the computer network or proxy, then reconnect.',
+  opentunnelRouteConflict: 'Another OpenTunnel client already holds this route. Stop it or reconnect later.',
+  opentunnelTunnelStopped: 'The OpenTunnel connection stopped. Reconnect.',
+  opentunnelTimeout: 'Timed out while creating the OpenTunnel tunnel. Reconnect.',
+  opentunnelIdentityFailed: 'The OpenTunnel tunnel identity is unavailable. Remove the local identity folder only if you accept a new public address.',
+  opentunnelGatewayFailed: 'The local DSH gateway failed to start behind the tunnel. Reconnect; local network access is unaffected.',
+})
+
+Object.assign(MOBILE_CONTROL_MESSAGES.it, {
+  frpTokenSaved: 'Salvato; lascia vuoto per mantenerlo', vpsRedeploy: 'Ripara o ridistribuisci VPS',
+  opentunnelName: 'OpenTunnel / DSH Remote', opentunnelBadge: 'Senza dominio né account',
+  opentunnelDescription: 'Indirizzo pubblico gestito tramite il relè OpenTunnel. Il plugin crea il tunnel e avvia automaticamente il gateway locale.',
+  opentunnelIntro: 'OpenTunnel assegna a questo computer un indirizzo HTTPS pubblico stabile e avvia il gateway mobile DSH su 127.0.0.1:3444. Il QR di abbinamento compare non appena il tunnel è pronto.',
+  opentunnelTunnelStarting: 'Creazione del tunnel OpenTunnel e del relativo certificato…', opentunnelGatewayStarting: 'Avvio del gateway DSH locale…',
+  opentunnelReady: 'OpenTunnel è pronto. Scansiona il QR di abbinamento da Accesso remoto nell’app.',
+  remoteUnavailableOpentunnel: 'OpenTunnel non è ancora in esecuzione.',
+  remoteStartingOpentunnel: 'Creazione del tunnel OpenTunnel e del relativo certificato…', remoteConnectingOpentunnel: 'Avvio del gateway DSH locale…',
+  switchingOpentunnel: 'Passaggio a OpenTunnel…', reconnectingOpentunnel: 'Riconnessione del tunnel OpenTunnel…',
+  resetOpentunnelConfirm: 'Disattivare l’accesso remoto OpenTunnel e rimuovere tutti i dispositivi remoti abbinati? L’identità del tunnel e le impostazioni locali salvate vengono conservate.',
+  opentunnelUrlLabel: 'Indirizzo pubblico',
+  opentunnelSdkMissing: 'L’SDK OpenTunnel non è disponibile. Reinstalla il pacchetto completo del plugin.',
+  opentunnelConnectFailed: 'Impossibile connettersi al relè OpenTunnel. Controlla la rete o il proxy del computer, poi riconnettiti.',
+  opentunnelRouteConflict: 'Un altro client OpenTunnel occupa già questa rotta. Arrestalo o riconnettiti più tardi.',
+  opentunnelTunnelStopped: 'La connessione OpenTunnel è stata arrestata. Riconnettiti.',
+  opentunnelTimeout: 'Timeout durante la creazione del tunnel OpenTunnel. Riconnettiti.',
+  opentunnelIdentityFailed: 'L’identità del tunnel OpenTunnel non è disponibile. Rimuovi la cartella identità locale solo se accetti un nuovo indirizzo pubblico.',
+  opentunnelGatewayFailed: 'Il gateway DSH locale non è riuscito ad avviarsi dietro il tunnel. Riconnettiti; l’accesso alla rete locale non è interessato.',
+})
+
+Object.assign(MOBILE_CONTROL_MESSAGES.zh, {
+  frpTokenSaved: '已安全保存；留空保持不变', vpsRedeploy: '修复或重新部署 VPS',
+  opentunnelName: 'OpenTunnel / DSH Remote', opentunnelBadge: '无需域名或账号',
+  opentunnelDescription: '通过 OpenTunnel 中继提供托管的公网地址。插件会自动创建隧道并启动本机网关。',
+  opentunnelIntro: 'OpenTunnel 为这台电脑提供稳定的公网 HTTPS 地址，并在 127.0.0.1:3444 启动 DSH 移动网关。隧道就绪后即显示配对二维码。',
+  opentunnelTunnelStarting: '正在创建 OpenTunnel 隧道及其证书…', opentunnelGatewayStarting: '正在启动本机 DSH 网关…',
+  opentunnelReady: 'OpenTunnel 已就绪。请在 App 的“远程访问”中扫描配对二维码。',
+  remoteUnavailableOpentunnel: 'OpenTunnel 尚未运行。',
+  remoteStartingOpentunnel: '正在创建 OpenTunnel 隧道及其证书…', remoteConnectingOpentunnel: '正在启动本机 DSH 网关…',
+  switchingOpentunnel: '正在切换到 OpenTunnel…', reconnectingOpentunnel: '正在重新连接 OpenTunnel 隧道…',
+  resetOpentunnelConfirm: '关闭 OpenTunnel 远程访问并移除所有远程配对设备？隧道身份和已保存的本机设置会保留。',
+  opentunnelUrlLabel: '公网地址',
+  opentunnelSdkMissing: 'OpenTunnel SDK 不可用。请重新安装完整插件包。',
+  opentunnelConnectFailed: '无法连接 OpenTunnel 中继。请检查电脑网络或代理后重新连接。',
+  opentunnelRouteConflict: '另一个 OpenTunnel 客户端已占用该路由。请先关闭它或稍后重连。',
+  opentunnelTunnelStopped: 'OpenTunnel 连接已停止。请重新连接。',
+  opentunnelTimeout: '创建 OpenTunnel 隧道超时。请重新连接。',
+  opentunnelIdentityFailed: 'OpenTunnel 隧道身份不可用。只有接受新的公网地址时才删除本机身份目录。',
+  opentunnelGatewayFailed: '本机 DSH 网关未能在隧道后启动。请重新连接；局域网访问不受影响。',
 })

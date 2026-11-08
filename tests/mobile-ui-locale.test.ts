@@ -49,7 +49,7 @@ describe('mobile UI locale persistence', () => {
     f.change('  ')
     expect(f.writes).toHaveLength(1)
     f.change('fr-FR')
-    expect(f.writes.at(-1)).toMatch(/^dsh_ma_ui_locale=en;/u)
+    expect(f.writes.at(-1)).toMatch(/^dsh_ma_ui_locale=fr;/u)
     stop()
   })
 

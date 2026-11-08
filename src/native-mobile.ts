@@ -122,7 +122,7 @@ export const NATIVE_MOBILE_STYLES = `
   [data-dsh-mobile-header] [class*="_tabs"]::-webkit-scrollbar { display:none; }
   [data-dsh-mobile-sidebar] { position:fixed !important; z-index:240 !important; inset:0 auto 0 0 !important; width:0 !important; overflow:visible !important; }
   [data-dsh-mobile-sidebar-root] { position:fixed !important; z-index:241 !important; inset:max(env(safe-area-inset-top),0px) auto 0 0 !important; height:auto !important; transition:width 180ms var(--dsh-mobile-motion-ease),box-shadow 180ms ease !important; }
-  [data-dsh-mobile-sidebar][data-open="true"] [data-dsh-mobile-sidebar-root] { width:min(88vw,340px) !important; padding-top:0 !important; box-shadow:18px 0 46px rgb(15 23 42 / 18%); }
+  [data-dsh-mobile-sidebar][data-open="true"] [data-dsh-mobile-sidebar-root] { width:min(88vw,340px) !important; padding-top:0 !important; box-shadow:18px 0 46px rgb(0 0 0 / 14%); }
   /* Extra panel/footer seats may exceed a short drawer. Keep a bounded
      workspace scrollport and let the drawer scroll to the remaining seats. */
   [data-dsh-mobile-sidebar][data-open="true"]:not(:has([data-dsh-mobile-settings])) [data-dsh-mobile-sidebar-root] { overflow-y:auto !important; overscroll-behavior-y:contain; }
@@ -140,7 +140,7 @@ export const NATIVE_MOBILE_STYLES = `
    [data-dsh-mobile-sidebar]:has([data-dsh-mobile-settings]) > * { width:100vw !important; overflow:visible !important; }
    [data-dsh-mobile-toggle] { width:44px !important; height:44px !important; min-width:44px !important; min-height:44px !important; }
   [data-dsh-mobile-sidebar][data-open="false"] [data-dsh-mobile-toggle] > svg[class*="_railFish"] { transform:translateY(-4px) !important; }
-  .dsh-native-mobile-backdrop { display:block; position:fixed; z-index:235; inset:env(safe-area-inset-top) 0 0; border:0; background:rgb(15 23 42 / 32%); }
+  .dsh-native-mobile-backdrop { display:block; position:fixed; z-index:235; inset:env(safe-area-inset-top) 0 0; border:0; background:var(--dsw-alias-bg-mask-1,rgb(0 0 0 / 32%)); }
   .dsh-native-mobile-backdrop:not([hidden]) { animation:dsh-mobile-fade-in var(--dsh-mobile-motion-duration) ease-out; }
   .dsh-native-mobile-backdrop[hidden] { display:none; }
   [data-dsh-mobile-details] { position:fixed !important; z-index:250 !important; inset:0 0 0 auto !important; width:min(94vw,460px) !important; max-width:none !important; transform:translateX(100%); transition:transform var(--dsh-mobile-motion-duration) var(--dsh-mobile-motion-ease); background:var(--dsw-alias-bg-layer-1, #fff); box-shadow:-18px 0 46px rgb(15 23 42 / 18%); }

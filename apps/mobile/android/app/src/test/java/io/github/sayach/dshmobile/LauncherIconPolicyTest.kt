@@ -42,7 +42,7 @@ class LauncherIconPolicyTest {
         LauncherIconPolicy.switchIcon(LauncherIconPolicy.icons.last().key, true,
             { LauncherIconPolicy.STATE_DEFAULT }) { batches += it }
         assertEquals(1, batches.size)
-        assertEquals(7, batches.single().size)
+        assertEquals(LauncherIconPolicy.icons.size, batches.single().size)
         assertEquals(1, batches.single().count { it.state == LauncherIconPolicy.STATE_ENABLED })
     }
 
@@ -64,7 +64,7 @@ class LauncherIconPolicyTest {
             assertTrue(error === failure)
         }
         assertEquals(before, states)
-        assertEquals(10, calls)
+        assertEquals(LauncherIconPolicy.icons.size + 3, calls)
     }
 
     @Test
@@ -130,7 +130,7 @@ class LauncherIconPolicyTest {
 
     @Test
     fun independentApplicationIdsKeepAliasNamesInTheCodeNamespace() {
-        assertEquals("io.github.sayach.dshmobile.LauncherWhaleGirl",
+        assertEquals("io.github.sayach.dshmobile.LauncherOfficialWhale",
             LauncherIconPolicy.aliasClassName("io.github.sayach.dshmobile", LauncherIconPolicy.icons.first()))
     }
 }

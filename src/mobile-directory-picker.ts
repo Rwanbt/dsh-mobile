@@ -42,6 +42,17 @@ const MESSAGES = {
     createParent: 'Create in', creating: 'Creating folder…', createStopping: 'Finishing the creation request…',
     createUnknown: 'The creation result is unknown; the folder may already exist. Go back and reload the directory before deciding whether to retry.',
   },
+  fr: {
+    title: "Sélectionnez le répertoire de l'espace de travail", path: "Chemin du répertoire", go: "Aller", home: "Maison", up: "Monter d'un niveau", cancel: "Annuler", close: "Fermer", open: "Ouvrir", retry: "Réessayer",
+    loading: "Chargement des dossiers…", adopting: "Ouverture de l'espace de travail…", empty: "Aucun sous-dossier dans ce répertoire", truncated: "Seuls les premiers dossiers sont affichés ; entrez un chemin complet pour ouvrir un autre répertoire",
+    'bad-path': "Entrez un chemin d'accès absolu à l'ordinateur, tel que C:\\projects ou /home/user/projects", unavailable: "Impossible de lire ce répertoire. Vérifiez son chemin et ses autorisations d'accès, puis réessayez.",
+    unauthorized: "L'autorisation de connexion n'est pas disponible. Fermez cette boîte de dialogue et reconnectez-vous à l'ordinateur.", 'invalid-response': "La réponse de l'annuaire n'est pas disponible. Réessayez ou reconnectez-vous à l'ordinateur.",
+    'request-failed': "Impossible de charger ce répertoire. Vérifiez la connexion et réessayez.", timeout: "Le chargement a expiré. Réessayez ou annulez.", failedOpen: "Impossible d'ouvrir le sélecteur de répertoire. Reconnectez-vous et réessayez.",
+    create: "Nouveau dossier", createTitle: "Nouveau nom de dossier", createAction: "Créer", createInvalid: "Entrez un seul nom de dossier sans séparateurs de chemin.",
+    createExists: "Un dossier portant ce nom existe déjà.", createFailed: "Impossible de créer le dossier. Vérifiez l'accès en écriture à ce répertoire et réessayez.",
+    createParent: "Créer dans", creating: "Création d'un dossier…", createStopping: "Fin de la demande de création…",
+    createUnknown: "Le résultat de la création est inconnu ; le dossier existe peut-être déjà. Revenez en arrière et rechargez le répertoire avant de décider de réessayer.",
+  },
   it: {
     title: 'Seleziona la cartella del workspace', path: 'Percorso della cartella', go: 'Vai', home: 'Home', up: 'Cartella superiore', cancel: 'Annulla', close: 'Chiudi', open: 'Apri', retry: 'Riprova',
     loading: 'Caricamento delle cartelle…', adopting: 'Apertura del workspace…', empty: 'Nessuna sottocartella in questa cartella', truncated: 'Sono mostrate solo le prime cartelle; inserisci un percorso completo per aprirne un’altra',
@@ -72,7 +83,7 @@ function localeOf(doc: Document): Locale {
   const languages = [doc.documentElement.lang, ...(doc.defaultView?.navigator.languages ?? [])]
   for (const language of languages) {
     const code = language.toLowerCase().split('-')[0]
-    if (code === 'zh' || code === 'en' || code === 'it') return code
+    if (code === 'zh' || code === 'en' || code === 'fr' || code === 'it') return code
   }
   return 'en'
 }

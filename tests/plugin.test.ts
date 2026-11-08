@@ -793,7 +793,7 @@ describe('stock DSH lifecycle', () => {
     const load = vi.spyOn(JsonMobileAccessControlStore.prototype, 'load')
     const disable = vi.spyOn(JsonMobileAccessControlStore.prototype, 'disableIfPresent')
     await mount(false)
-    expect(disable).toHaveBeenCalledTimes(5)
+    expect(disable).toHaveBeenCalledTimes(6)
     expect(load).toHaveBeenCalledTimes(2)
   })
 
@@ -1875,7 +1875,7 @@ describe('stock DSH lifecycle', () => {
     const mounted = await mount()
     expect(mounted.command).toMatchObject({
       name: 'mobile',
-      description: '定制手机界面或添加电脑能力',
+      description: expect.any(String),
       input: { hint: expect.any(String) },
     })
     const steered: { text: string; source: unknown }[] = []

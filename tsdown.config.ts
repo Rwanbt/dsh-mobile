@@ -29,6 +29,8 @@ export default defineConfig([{
     neverBundle: [
       '@deepseek-ai/cordis',
       '@deepseek-ai/dsh-host-webserver',
+      '@opentunnel/client',
+      'effect',
       'web-push',
       'zod',
     ],
@@ -124,3 +126,4 @@ export default defineConfig([{
     footer: 'return module.exports; } });',
   },
 }, mobileCompatibilityBuild])
+

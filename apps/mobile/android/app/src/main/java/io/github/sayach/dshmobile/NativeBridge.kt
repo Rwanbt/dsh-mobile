@@ -138,6 +138,12 @@ internal class NativeBridge(
     /** Opaque DSH base background reported after theme resolution. */
     var onPageBackgroundColor: ((color: Int) -> Unit)? = null
 
+    /**
+     * Split chrome surface while a drawer overlay covers part of the page.
+     * Fraction < 0 restores the solid page background.
+     */
+    var onPageChromeSplit: ((fraction: Float, left: Int, right: Int) -> Unit)? = null
+
     /** Called when the authenticated Host revokes this device's credential. */
     var onDeviceRevoked: (() -> Unit)? = null
 
@@ -314,6 +320,7 @@ internal class NativeBridge(
             }
         }
         onPageBackgroundColor = null
+        onPageChromeSplit = null
         onScrollDirection = null
         onDeviceRevoked = null
         onRenewSession = null
@@ -575,6 +582,30 @@ internal class NativeBridge(
                 if (red in 0..255 && green in 0..255 && blue in 0..255) {
                     val color = Color.rgb(red, green, blue)
                     activity.runOnUiThread { if (available) onPageBackgroundColor?.invoke(color) }
+                }
+            }
+            "page.chromeSplit" -> {
+                val active = message.optBoolean("active", false)
+                android.util.Log.d("DSHMobile", "chromeSplit event active=" + active + " fraction=" + message.optDouble("fraction", -1.0).toString())
+                if (!active) {
+                    activity.runOnUiThread { if (available) onPageChromeSplit?.invoke(-1f, 0, 0) }
+                } else {
+                    val fraction = message.optDouble("fraction", -1.0).toFloat()
+                    val left = intArrayOf(
+                        message.optInt("leftRed", -1),
+                        message.optInt("leftGreen", -1),
+                        message.optInt("leftBlue", -1),
+                    )
+                    val right = intArrayOf(
+                        message.optInt("rightRed", -1),
+                        message.optInt("rightGreen", -1),
+                        message.optInt("rightBlue", -1),
+                    )
+                    if (fraction in 0f..1f && left.all { it in 0..255 } && right.all { it in 0..255 }) {
+                        val leftColor = Color.rgb(left[0], left[1], left[2])
+                        val rightColor = Color.rgb(right[0], right[1], right[2])
+                        activity.runOnUiThread { if (available) onPageChromeSplit?.invoke(fraction, leftColor, rightColor) }
+                    }
                 }
             }
         }
@@ -1224,24 +1255,92 @@ internal class NativeBridge(
             document.documentElement.appendChild(probe);
             const resolved = getComputedStyle(probe).color; probe.remove();
             const match = resolved.match(/^rgba?\(\s*(\d+(?:\.\d+)?)\D+(\d+(?:\.\d+)?)\D+(\d+(?:\.\d+)?)(?:\D+(\d+(?:\.\d+)?))?\s*\)$/i);
-            if (!match || (match[4] !== undefined && Number(match[4]) === 0)) return null;
-            return [Number(match[1]), Number(match[2]), Number(match[3])].map(channel => Math.max(0, Math.min(255, Math.round(channel))));
+            if (!match) return null;
+            const alpha = match[4] === undefined ? 1 : Number(match[4]);
+            if (!(alpha > 0)) return null;
+            return {
+              rgb: [Number(match[1]), Number(match[2]), Number(match[3])].map(channel => Math.max(0, Math.min(255, Math.round(channel)))),
+              alpha: Math.min(1, Math.max(0, alpha)),
+            };
           };
           const resolveChromeColor = () => {
             const rootStyle = getComputedStyle(document.documentElement);
             const candidates = [rootStyle.getPropertyValue('--dsw-alias-bg-base'), document.body ? getComputedStyle(document.body).backgroundColor : '', rootStyle.backgroundColor, 'rgb(255, 255, 255)'];
-            for (const candidate of candidates) { const color = parseChromeColor(candidate); if (color) return color; }
-            return [255, 255, 255];
+            let base = [255, 255, 255];
+            for (const candidate of candidates) { const parsed = parseChromeColor(candidate); if (parsed) { base = parsed.rgb; break; } }
+            // An open mobile drawer/detail scrim darkens the visible page edge without
+            // changing the base background. Composite the mask so the native status and
+            // navigation strips keep matching what the user actually sees.
+            const mask = document.querySelector('.dshm-scrim[data-open="true"]') || document.querySelector('[data-sidebar-mask]');
+            if (mask) {
+              const maskColor = parseChromeColor(getComputedStyle(mask).backgroundColor);
+              if (maskColor && maskColor.alpha > 0) {
+                const alpha = Math.min(1, maskColor.alpha);
+                base = base.map((channel, index) => Math.max(0, Math.min(255, Math.round(maskColor.rgb[index] * alpha + channel * (1 - alpha)))));
+              }
+            }
+            return base;
+          };
+          const chromeMaskOpen = () => document.querySelector('.dshm-scrim[data-open="true"]') !== null;
+          const resolveChromeSplit = rightColor => {
+            const drawer = document.querySelector('.dshm-drawer[data-open="true"]');
+            if (!(drawer instanceof Element)) return null;
+            // The mobile adapter keeps the drawer wrapper at width 0 and sizes the
+            // inner sidebar root instead, so measure the visible surface.
+            const surface = drawer.querySelector('[data-dsh-mobile-sidebar-root]') || drawer.firstElementChild || drawer;
+            let rect = surface.getBoundingClientRect();
+            if (!(rect.width > 0)) rect = drawer.getBoundingClientRect();
+            if (!(rect.width > 0) || !(window.innerWidth > 0)) return null;
+            const targetFraction = Math.min(0.88, 340 / window.innerWidth);
+            const fraction = Math.max(Math.max(0, Math.min(1, rect.width / window.innerWidth)), targetFraction);
+            let left = null;
+            const y = Math.max(1, Math.min(rect.height - 1, window.innerHeight / 2));
+            const x = Math.max(1, Math.min(rect.width - 1, 12));
+            let node = document.elementFromPoint(x, y);
+            while (node && node !== document.documentElement) {
+              const parsed = parseChromeColor(getComputedStyle(node).backgroundColor);
+              if (parsed && parsed.alpha >= 0.99) { left = parsed.rgb; break; }
+              node = node.parentElement;
+            }
+            if (!left) {
+              const parsed = parseChromeColor(getComputedStyle(drawer).backgroundColor);
+              left = parsed ? parsed.rgb : rightColor;
+            }
+            return { fraction: fraction, left: left, right: rightColor };
+          };
+          const postChromeSplit = split => {
+            if (!split) { postEvent({ event: 'page.chromeSplit', active: false }); return; }
+            postEvent({
+              event: 'page.chromeSplit',
+              active: true,
+              fraction: split.fraction,
+              leftRed: split.left[0], leftGreen: split.left[1], leftBlue: split.left[2],
+              rightRed: split.right[0], rightGreen: split.right[1], rightBlue: split.right[2],
+            });
+            // The drawer width animates; re-measure once the transition settles.
+            setTimeout(() => { scheduleChromeSync(); }, 280);
+            setTimeout(() => { scheduleChromeSync(); }, 520);
           };
           const syncChromeColor = () => {
-            chromeFrame = 0; const color = resolveChromeColor(); const key = color.join(',');
-            if (key === lastChromeColor) return; lastChromeColor = key;
+            chromeFrame = 0;
+            const color = resolveChromeColor();
+            const split = chromeMaskOpen() ? resolveChromeSplit(color) : null;
+            const splitKey = split === null ? 'none' : split.fraction.toFixed(3) + ':' + split.left.join(',') + ':' + split.right.join(',');
+            const key = color.join(',') + '|' + splitKey;
+            if (key === lastChromeColor) return;
+            lastChromeColor = key;
             postEvent({ event: 'page.background', red: color[0], green: color[1], blue: color[2] });
+            postChromeSplit(split);
           };
           const scheduleChromeSync = () => { if (!chromeFrame) chromeFrame = requestAnimationFrame(syncChromeColor); };
           const chromeObserver = new MutationObserver(scheduleChromeSync);
           chromeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style', 'data-theme'] });
           if (document.body) chromeObserver.observe(document.body, { attributes: true, attributeFilter: ['class', 'style', 'data-theme'] });
+          // Overlay surfaces (drawer scrim, right details panel) toggle a data-open
+          // attribute instead of changing the document background. Watch them so the
+          // native strips composite the mask while it is visible.
+          const chromeOverlayObserver = new MutationObserver(scheduleChromeSync);
+          if (document.body) chromeOverlayObserver.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['data-open', 'data-sidebar-mask', 'class', 'style'] });
           const colorScheme = matchMedia('(prefers-color-scheme: dark)');
           if (typeof colorScheme.addEventListener === 'function') colorScheme.addEventListener('change', scheduleChromeSync); else if (typeof colorScheme.addListener === 'function') colorScheme.addListener(scheduleChromeSync);
 
@@ -1259,7 +1358,7 @@ internal class NativeBridge(
           };
           document.addEventListener('scroll', onPageScroll, { passive: true, capture: true });
           window.__DSH_MOBILE_SCROLL_SYNC__ = { dispose: () => document.removeEventListener('scroll', onPageScroll, { capture: true }) };
-          window.__DSH_MOBILE_CHROME_SYNC__ = { dispose: () => { chromeObserver.disconnect(); if (chromeFrame) cancelAnimationFrame(chromeFrame); if (typeof colorScheme.removeEventListener === 'function') colorScheme.removeEventListener('change', scheduleChromeSync); else if (typeof colorScheme.removeListener === 'function') colorScheme.removeListener(scheduleChromeSync); } };
+          window.__DSH_MOBILE_CHROME_SYNC__ = { dispose: () => { chromeObserver.disconnect(); chromeOverlayObserver.disconnect(); if (chromeFrame) cancelAnimationFrame(chromeFrame); if (typeof colorScheme.removeEventListener === 'function') colorScheme.removeEventListener('change', scheduleChromeSync); else if (typeof colorScheme.removeListener === 'function') colorScheme.removeListener(scheduleChromeSync); } };
           scheduleChromeSync();
         })();
     """.trimIndent().replace("$JS_OBJECT_NAME", JS_OBJECT_NAME)

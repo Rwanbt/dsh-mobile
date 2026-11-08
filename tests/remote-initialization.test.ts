@@ -11,6 +11,8 @@ import { FrpConfigStore } from '../src/frp-config.js'
 import { IrohController } from '../src/iroh.js'
 import type { IrohComponentManager } from '../src/iroh-component.js'
 import { ManagedOriginController } from '../src/managed-origin.js'
+import { OpenTunnelController } from '../src/opentunnel.js'
+import type { OriginConfigStore } from '../src/origin-proxy-config.js'
 import { REMOTE_PROVIDERS, type RemoteProvider, type RemoteProviderController } from '../src/remote.js'
 
 const roots: string[] = []
@@ -60,6 +62,16 @@ function controllerFixture(provider: RemoteProvider, store: JsonMobileAccessCont
       controller = new ManagedOriginController({ store, modeStore: { load: async () => ({ version: 1, mode: 'external' }), save: async () => {} }, external, managed })
       break
     }
+    case 'opentunnel':
+      controller = new OpenTunnelController({
+        store,
+        originConfig: { settings: () => undefined } as unknown as OriginConfigStore,
+        createGateway,
+        stateDirectory: root,
+        remoteDirectory: join(root, 'remote'),
+        loadSdk: async () => { throw new Error('fixture missing sdk') },
+      })
+      break
     case 'iroh':
       controller = new IrohController({
         store,

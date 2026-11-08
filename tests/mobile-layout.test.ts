@@ -573,7 +573,7 @@ describe('dedicated mobile layout boot', () => {
     expect(resolveMobileLayoutLanguage('it-IT', ['en-US'])).toBe('it')
     expect(resolveMobileLayoutLanguage('zh-CN', ['it-IT', 'en-US'])).toBe('zh')
     expect(resolveMobileLayoutLanguage('', ['en-GB'])).toBe('en')
-    expect(resolveMobileLayoutLanguage('', ['fr-FR'])).toBe('en')
+    expect(resolveMobileLayoutLanguage('', ['fr-FR'])).toBe('fr')
     expect(MOBILE_LAYOUT_MESSAGES.it).toEqual({
       closePanels: 'Chiudi pannelli',
       workspaceNavigation: 'Navigazione area di lavoro e sessioni',

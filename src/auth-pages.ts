@@ -1,5 +1,5 @@
 /** Browser-facing pairing and reauthentication pages with language negotiation. */
-export type AuthPageLocale = 'zh' | 'en' | 'it'
+export type AuthPageLocale = 'zh' | 'en' | 'fr' | 'it'
 
 interface AuthPageCopy {
   readonly lang: string
@@ -55,6 +55,21 @@ const COPY: Record<AuthPageLocale, AuthPageCopy> = {
     restoring: '正在恢复安全会话…', noLongerPaired: '此设备已不在配对列表中。请在电脑端打开配对，然后重新配对。',
     openPairing: '打开配对页面',
   },
+  fr: {
+    lang: 'fr-FR', pairTitle: 'Appairer l’accès mobile DSH', pairHeading: 'Appairer cet appareil',
+    pairingCode: 'Code d’appairage', deviceName: 'Nom de l’appareil', pair: 'Appairer', pairing: 'Appairage…',
+    pairingCodeHint: 'Utilisez le code d’appairage de 43 caractères affiché sur l’ordinateur. Les clés commençant par dsh1. ou dsh2. sont destinées à l’application Android.',
+    invalidPairingCode: 'Saisissez le code d’appairage de 43 caractères de la fenêtre d’appairage actuelle sur l’ordinateur.',
+    appKeyNotCode: 'Il s’agit d’une clé pour l’application Android. Utilisez-la dans l’application, ou copiez le code d’appairage navigateur depuis l’ordinateur.',
+    pairFailed: 'L’appairage a échoué. Vérifiez le code ou générez-en un nouveau sur l’ordinateur.',
+    pairingExpired: 'Le code d’appairage est invalide ou a expiré. Générez un nouveau code sur l’ordinateur et réessayez.',
+    pairingLimited: 'Trop de tentatives d’appairage. Patientez un instant puis réessayez.',
+    deviceLimit: 'La limite d’appareils appairés est atteinte. Retirez un appareil inutilisé et générez un nouveau code d’appairage sur l’ordinateur.',
+    unavailable: 'L’ordinateur est indisponible. Vérifiez la connexion puis réessayez.',
+    reconnectTitle: 'Reconnecter l’accès mobile DSH', reconnectHeading: 'Reconnecter cet appareil',
+    restoring: 'Restauration de la session sécurisée…', noLongerPaired: 'Cet appareil n’est plus appairé. Ouvrez l’appairage sur l’ordinateur, puis appairez-le à nouveau.',
+    openPairing: 'Ouvrir l’appairage',
+  },
   it: {
     lang: 'it-IT', pairTitle: 'Abbina accesso mobile DSH', pairHeading: 'Abbina questo dispositivo',
     pairingCode: 'Codice di abbinamento', deviceName: 'Nome dispositivo', pair: 'Abbina', pairing: 'Abbinamento…',
@@ -72,7 +87,7 @@ const COPY: Record<AuthPageLocale, AuthPageCopy> = {
   },
 }
 
-/** Choose Chinese, Italian, or English from an HTTP Accept-Language header. */
+/** Choose Chinese, Italian, French, or English from an HTTP Accept-Language header. */
 export function resolveAuthPageLocale(header: string | undefined): AuthPageLocale {
   const values = header?.split(',').map((value, index) => {
     const [language, ...parameters] = value.split(';')
@@ -86,6 +101,7 @@ export function resolveAuthPageLocale(header: string | undefined): AuthPageLocal
   }).filter(value => value.quality > 0).sort((left, right) => right.quality - left.quality || left.index - right.index).map(value => value.language) ?? []
   for (const value of values) {
     if (value.startsWith('zh')) return 'zh'
+    if (value.startsWith('fr')) return 'fr'
     if (value.startsWith('it')) return 'it'
     if (value.startsWith('en')) return 'en'
   }

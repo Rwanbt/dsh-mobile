@@ -18,6 +18,14 @@ export const CLIENT_MODULE_RECOVERY_COPY = {
     working: 'Updating this device’s module selection…',
     failed: 'Could not restore the page. Check that the computer and remote connection are online, then retry.',
   },
+  fr: {
+    title: "Les modules de pages mobiles nécessitent une attention particulière",
+    explanation: "Les plugins ou dépendances de l’ordinateur ont changé. La sélection de modules enregistrée ne peut plus charger cette page.",
+    scope: "Chargez tous les modules de cet appareil et rouvrez DSH. Les paramètres par défaut de l'ordinateur, des autres appareils et des plugins installés restent inchangés.",
+    action: "Chargez tous les modules pour cet appareil et réessayez",
+    working: "Mise à jour de la sélection de modules de cet appareil…",
+    failed: "Impossible de restaurer la page. Vérifiez que l'ordinateur et la connexion à distance sont en ligne, puis réessayez.",
+  },
   it: {
     title: 'I moduli della pagina mobile richiedono attenzione',
     explanation: 'I plugin o le dipendenze del computer sono cambiati. La selezione salvata non può più caricare questa pagina.',

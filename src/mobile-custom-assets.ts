@@ -13,6 +13,15 @@ const COPY: Record<MobileControlLocale, Record<MobileAssetLoadFailure | 'recover
     refresh_failed: 'Mobile customization could not be refreshed. Check the connection and current Mobile access entry.',
     recovered: 'Mobile customization is available again.',
   },
+  fr: {
+    gateway_required: "Les CSS, scripts et extensions mobiles personnalisés nécessitent une entrée d'accès DSH Mobile couplée. Cette page n'utilise pas la passerelle mobile.",
+    authentication_required: "La personnalisation mobile n'a pas été actualisée car l'authentification de l'appareil n'est pas disponible. Reconnectez-vous via l’entrée d’accès mobile actuelle.",
+    manifest_unavailable: "Le manifeste de l'extension mobile n'est pas disponible. Vérifiez la version du plugin et le routage du proxy ; les anciens fichiers personnalisés peuvent toujours être chargés lorsqu'ils sont autorisés.",
+    manifest_invalid: "Le manifeste de l'extension mobile n'est pas valide. La personnalisation existante est conservée ; vérifiez la version du plugin et le routage du proxy.",
+    resource_unavailable: "Une ressource de personnalisation mobile n'a pas pu être chargée ou activée. Vérifiez les fichiers personnalisés et l'entrée d'accès mobile actuelle.",
+    refresh_failed: "La personnalisation mobile n'a pas pu être actualisée. Vérifiez la connexion et l'entrée d'accès mobile actuelle.",
+    recovered: "La personnalisation mobile est à nouveau disponible.",
+  },
   it: {
     gateway_required: 'CSS, script ed estensioni mobili personalizzati richiedono un accesso DSH Mobile abbinato. Questa pagina non usa il gateway Mobile.',
     authentication_required: 'La personalizzazione mobile non è stata aggiornata perché l’autenticazione del dispositivo non è disponibile. Riconnettiti tramite l’accesso Mobile attuale.',

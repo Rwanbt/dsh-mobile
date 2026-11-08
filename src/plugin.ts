@@ -24,7 +24,7 @@ import { fileURLToPath } from 'node:url'
 import { parseControlFile, parseGatewayConfig, type PluginConfig, type ResolvedGatewayConfig } from './config.js'
 import { collectConnectionDiagnostics, hasCompetingRemoteChannelBoot } from './diagnostics.js'
 import { MacFileAccessProbe, openMacFullDiskAccessSettings } from './macos-file-access.js'
-import { buildMobileGuide, type MobileGuideState } from './mobile-guide.js'
+import { buildMobileGuide, resolveHostLocale, type MobileGuideState } from './mobile-guide.js'
 import { createVpsUninstallScript, deployVps, fetchVpsHostKeys, parseVpsDeploymentInput, uninstallVps } from './vps-deploy.js'
 import { TaskEventHub, watchTaskCompletions } from './task-events.js'
 import {
@@ -86,6 +86,7 @@ import { CaddyController } from './caddy.js'
 import { ManagedOriginController, JsonOriginModeStore, createVolatileRemoteControlStore } from './managed-origin.js'
 import { OriginConfigStore, parseOriginSettings, validateOriginListenPort, type OriginConfigurationStatus, type OriginSettings } from './origin-proxy-config.js'
 import { OriginController } from './origin-proxy.js'
+import { OpenTunnelController } from './opentunnel.js'
 import { PluginReleaseManager, releaseProfileDirectory } from './release-update.js'
 import { installMobileFileLogger } from './file-logger.js'
 import { createPushHost } from './mobile-push/host.js'
@@ -497,6 +498,11 @@ function remoteControlPayload(
     ...(gateway === undefined ? {} : { extensions: gateway.extensionStatus() }),
     providers: {
       tailscale: { bundled: true, running: providerStatuses.tailscale.enabled, state: providerStatuses.tailscale.state },
+      opentunnel: {
+        bundled: true,
+        running: providerStatuses.opentunnel.enabled,
+        state: providerStatuses.opentunnel.state,
+      },
       cpolar: {
         bundled: false,
         running: providerStatuses.cpolar.enabled,
@@ -1067,6 +1073,7 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
   const frpStore = new JsonMobileAccessControlStore(join(remoteDirectory, 'frp', 'control.json'), false)
   const originStore = new JsonMobileAccessControlStore(join(remoteDirectory, 'origin', 'control.json'), false)
   const irohStore = new JsonMobileAccessControlStore(join(remoteDirectory, 'iroh', 'control.json'), false)
+  const opentunnelStore = new JsonMobileAccessControlStore(join(remoteDirectory, 'opentunnel', 'control.json'), false)
   const caddyController = new CaddyController({
     store: createVolatileRemoteControlStore(),
     component: caddyComponent,
@@ -1107,6 +1114,21 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
       return { der: ca.raw, fingerprint }
     },
   })
+  /**
+   * Managed public-URL transport. The bridge runs in-process through the
+   * OpenTunnel promise SDK; it configures the shared origin settings for the
+   * tunnel URL and starts the loopback origin gateway that the pairing route
+   * depends on. It keeps a private origin controller/store, so the manual
+   * `origin` provider remains selectable and its saved settings are restored
+   * whenever OpenTunnel is disabled.
+   */
+  const opentunnelController = new OpenTunnelController({
+    store: opentunnelStore,
+    originConfig,
+    createGateway: createOriginGateway,
+    stateDirectory,
+    remoteDirectory,
+  })
   const remoteControllers: Record<RemoteProvider, RemoteProviderController> = {
     tailscale: new FunnelController({
       store: tailscaleStore,
@@ -1116,6 +1138,7 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
       hostname: `dsh-${instanceId.slice(0, 12)}`,
       createGateway: createRemoteGateway,
     }),
+    opentunnel: opentunnelController,
     cpolar: new CpolarController({
       store: cpolarStore,
       executable: cpolarComponent.executable,
@@ -1168,6 +1191,7 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
     remoteController().gateway(),
     {
       tailscale: remoteControllers.tailscale.status(),
+      opentunnel: remoteControllers.opentunnel.status(),
       cpolar: remoteControllers.cpolar.status(),
       cloudflared: remoteControllers.cloudflared.status(),
       frp: remoteControllers.frp.status(),
@@ -1521,8 +1545,9 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
         }
         if (request.method === 'POST' && target.decodedPathname === `${LOCAL_ADMIN_PREFIX}/remote/provider`) {
           const body = await readJsonObject(request, 4096)
-          if (body.provider !== 'tailscale' && body.provider !== 'cpolar' && body.provider !== 'cloudflared'
-            && body.provider !== 'frp' && body.provider !== 'origin' && body.provider !== 'iroh') {
+          if (body.provider !== 'tailscale' && body.provider !== 'opentunnel' && body.provider !== 'cpolar'
+            && body.provider !== 'cloudflared' && body.provider !== 'frp' && body.provider !== 'origin'
+            && body.provider !== 'iroh') {
             throw new HttpError(400, 'bad_request')
           }
           await remoteProviders.select(body.provider)
@@ -1917,9 +1942,9 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
           const body = await readJsonObject(request, 4096)
           const running = body.running
           if (typeof running !== 'boolean') throw new HttpError(400, 'bad_request')
-          if (body.provider !== undefined && body.provider !== 'tailscale' && body.provider !== 'cpolar'
-            && body.provider !== 'cloudflared' && body.provider !== 'frp' && body.provider !== 'origin'
-            && body.provider !== 'iroh') throw new HttpError(400, 'bad_request')
+          if (body.provider !== undefined && body.provider !== 'tailscale' && body.provider !== 'opentunnel'
+            && body.provider !== 'cpolar' && body.provider !== 'cloudflared' && body.provider !== 'frp'
+            && body.provider !== 'origin' && body.provider !== 'iroh') throw new HttpError(400, 'bad_request')
           const control = async (controller: RemoteProviderController): Promise<void> => { await controller.setEnabled(running) }
           if (body.provider !== undefined) await remoteProviders.mutateSelected(body.provider, control)
           else await remoteProviders.mutate(control)
@@ -1976,13 +2001,45 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
         () => draining,
       ])
     }
+    /** Host display language, used for command copy and the /mobile guide. */
+    const hostLocale = resolveHostLocale(process.env)
+    const mobileCommandCopy = {
+      en: {
+        description: 'Customize the mobile UI or add computer capabilities',
+        hint: '<what to do>',
+        empty: 'Describe what you need, for example: /mobile make the mobile UI dark',
+        request: 'User request: ',
+        success: 'Request handed to DSH; changes appear on the phone within seconds.',
+      },
+      fr: {
+        description: 'Personnaliser l’interface mobile ou ajouter des capacités à l’ordinateur',
+        hint: '<ce qu’il faut faire>',
+        empty: 'Décrivez votre besoin, par exemple : /mobile passe l’interface mobile en thème sombre',
+        request: 'Demande de l’utilisateur : ',
+        success: 'Demande transmise à DSH ; les modifications apparaissent sur le téléphone en quelques secondes.',
+      },
+      it: {
+        description: 'Personalizza l’interfaccia mobile o aggiungi capacità al computer',
+        hint: '<cosa fare>',
+        empty: 'Descrivi cosa serve, per esempio: /mobile rendi scura l’interfaccia mobile',
+        request: 'Richiesta dell’utente: ',
+        success: 'Richiesta affidata a DSH; le modifiche compaiono sul telefono in pochi secondi.',
+      },
+      zh: {
+        description: '定制手机界面或添加电脑能力',
+        hint: '<要做什么>',
+        empty: '请带上需求，例如：/mobile 把手机端改成深色主题',
+        request: '用户需求：',
+        success: '已把需求交给 DSH 处理，改动会在手机端几秒内生效。',
+      },
+    }[hostLocale]
     const disposeMobileCommand = ctx.commands.register({
       name: 'mobile',
-      description: '定制手机界面或添加电脑能力',
-      input: { hint: '<要做什么>' },
+      description: mobileCommandCopy.description,
+      input: { hint: mobileCommandCopy.hint },
       handler: async ({ agent, rawInput }) => {
         const task = rawInput.trim()
-        if (task === '') return { kind: 'error', text: '请带上需求，例如：/mobile 把手机端改成深色主题' }
+        if (task === '') return { kind: 'error', text: mobileCommandCopy.empty }
         // Collect the current customization state so the guide does not
         // overwrite earlier /mobile work blindly.
         const hostStates = new Map(mobileAccess.hostStatus().hosts.map(host => [host.id, host]))
@@ -1997,19 +2054,19 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
           }),
           failedExtensionCount: mobileAccess.status().failed,
         }
-        const guide = buildMobileGuide(state)
+        const guide = buildMobileGuide(state, hostLocale)
         // A plugin-source message renders as a collapsed context-injection row
         // (label "dsh-mobile", one-line notice summary) instead of a user bubble,
         // while steering still wakes the agent with the full guide as input.
         agent.steer(createUserMessage({
-          content: [{ type: 'text', text: `${guide}\n\n用户需求：${task}` }],
+          content: [{ type: 'text', text: `${guide}\n\n${mobileCommandCopy.request}${task}` }],
           source: {
             kind: 'plugin:dsh-mobile',
             form: 'notice',
             summary: boundContextSummary(`/mobile ${task}`),
           },
         }))
-        return { kind: 'success', text: '已把需求交给 DSH 处理，改动会在手机端几秒内生效。' }
+        return { kind: 'success', text: mobileCommandCopy.success }
       },
     })
     let disposePushRuntimeInjection: (() => void | Promise<void>) | undefined
@@ -2030,6 +2087,7 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
       await lanController.initialize()
       const stores: Record<RemoteProvider, JsonMobileAccessControlStore> = {
         tailscale: tailscaleStore,
+        opentunnel: opentunnelStore,
         cpolar: cpolarStore,
         cloudflared: cloudflaredStore,
         frp: frpStore,

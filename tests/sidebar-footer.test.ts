@@ -173,7 +173,7 @@ describe('desktop Mobile Access footer', () => {
       margin: '4px 0',
       padding: '0 10px 0 8px',
       border: '0',
-      'border-radius': '12px',
+      'border-radius': 'var(--dsw-radius-md,12px)',
       'font-family': 'inherit',
       'font-size': '14px',
       'line-height': '22px',

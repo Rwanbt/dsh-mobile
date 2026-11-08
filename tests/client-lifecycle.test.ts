@@ -935,7 +935,7 @@ describe('mobile-control localization', () => {
     expect(CONTROL_STYLES).toContain('dsh-mobile-control__lan-setup{')
     expect(CONTROL_STYLES).toContain('min-height:44px')
     expect(CONTROL_STYLES).toContain('dsh-mobile-control__actions[hidden],.dsh-mobile-control__manage-row[hidden]{display:none}')
-    expect(CONTROL_STYLES).toContain('dsh-mobile-control__qr img{border-radius:12px;background:#fff')
+    expect(CONTROL_STYLES).toContain('dsh-mobile-control__qr img{border-radius:var(--dsw-radius-md,12px);background:#fff')
   })
 
   it('keeps the named-tunnel form behind an explicit mode choice and never persists the token in the DOM', () => {
@@ -1084,7 +1084,8 @@ describe('mobile-control localization', () => {
   it('follows the DSH document language before the browser fallback', () => {
     expect(selectMobileControlLocale('it-IT', ['en-US'])).toBe('it')
     expect(selectMobileControlLocale('', ['zh-Hant', 'en-US'])).toBe('zh')
-    expect(selectMobileControlLocale('de-DE', ['fr-FR'])).toBe('en')
+    expect(selectMobileControlLocale('de-DE', ['fr-FR'])).toBe('fr')
+    expect(selectMobileControlLocale('de-DE', ['de-AT'])).toBe('en')
     expect(selectMobileControlLocale('en-US', ['it-IT'])).toBe('en')
     expect(selectMobileControlLocale('zh-CN', ['it-IT'])).toBe('zh')
   })
@@ -1212,11 +1213,11 @@ describe('mobile-control localization', () => {
     // available in CI, so the set the plugin may use is recorded here: adding a token is
     // then a deliberate edit rather than a silent typo.
     const allowed = new Set([
-      '--dsw-radius-panel', '--dsw-font-family',
+      '--dsw-radius-panel', '--dsw-radius-lg', '--dsw-radius-md', '--dsw-radius-sm', '--dsw-radius-xs', '--dsw-font-family',
       '--dsw-font-markdown-base', '--dsw-font-markdown-code-block',
       '--dsw-alias-bg-base', '--dsw-alias-bg-layer-1', '--dsw-alias-bg-layer-2', '--dsw-alias-bg-layer-3',
       '--dsw-alias-bg-module-platform',
-      '--dsw-alias-border-l2', '--dsw-alias-border-l3', '--dsw-alias-border-l4',
+      '--dsw-alias-border-l1', '--dsw-alias-border-l2', '--dsw-alias-border-l3', '--dsw-alias-border-l4',
       '--dsw-alias-interactive-bg-active', '--dsw-alias-interactive-bg-hover',
       '--dsw-alias-interactive-bg-hover-danger', '--dsw-alias-interactive-bg-hover-solid',
       '--dsw-alias-label-primary', '--dsw-alias-label-primary-bluish',
@@ -1261,7 +1262,7 @@ describe('mobile-control localization', () => {
   it('keeps managed connection copy distinct from external backend and form preview', () => {
     const source = readFileSync(new URL('../src/client.ts', import.meta.url), 'utf8')
     expect(source).toContain("const managedOrigin = origin && data.originMode === 'managed'")
-    expect(source).toContain("ready: origin ? t(managedOrigin ? 'caddyVerified' : 'originReady')")
+    expect(source).toContain("ready: opentunnel ? t('opentunnelReady') : origin ? t(managedOrigin ? 'caddyVerified' : 'originReady')")
     expect(source).toContain("originChoiceBadge.textContent = managedOrigin ? t(remoteReady ? 'ready' : 'advanced') : originListening ? t('originBackendReady') : t('advanced')")
     expect(source).not.toContain("element('div', 'dsh-mobile-control__stage-header')")
     expect(source).toContain('caddyModeManagedSelected === managedOrigin')
@@ -1287,7 +1288,7 @@ describe('mobile-control localization', () => {
 
   it('wires private-origin controls and protects edited forms from stale poll snapshots', () => {
     const source = readFileSync(new URL('../src/client.ts', import.meta.url), 'utf8')
-    expect(source).toContain('providerChoices.append(irohChoice, frpChoice, originChoice)')
+    expect(source).toContain('providerChoices.append(tailscaleChoice, opentunnelChoice, cpolarChoice, cloudflaredChoice, frpChoice, originChoice, irohChoice)')
     expect(source).toContain('/api/mobile-access/remote/origin/configure')
     expect(source).toContain('/api/mobile-access/remote/origin/purge')
     expect(source).toContain('if (!originFormDirty && !originFormBusy)')
