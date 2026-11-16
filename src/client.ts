@@ -4039,9 +4039,12 @@ function installControl(): { remove: () => void; toggle: () => void; isOpen: () 
     // A staged cloudflared mode that differs from the saved one must be committed
     // first: otherwise "Enable" would start the previously saved tunnel type while
     // the UI shows the newly selected one.
+    // Starting a tunnel can exceed the ordinary control budget: OpenTunnel
+    // provisions its certificate on first use, so give an enable the long one.
+    const operationTimeout = nextRunning ? LONG_CONTROL_REQUEST_TIMEOUT_MS : undefined
     const operation = nextRunning && provider === 'cloudflared' && cloudflaredModeDraft !== null && cloudflaredModeDraft !== cloudflaredTunnelMode
-      ? controlRequestJson('/api/mobile-access/remote/cloudflared/tunnel', { method: 'POST', body: JSON.stringify({ mode: cloudflaredModeDraft, connect: true }) })
-      : controlRequestJson('/api/mobile-access/remote/control', { method: 'POST', body: JSON.stringify({ running: nextRunning, provider }) })
+      ? controlRequestJson('/api/mobile-access/remote/cloudflared/tunnel', { method: 'POST', body: JSON.stringify({ mode: cloudflaredModeDraft, connect: true }) }, operationTimeout)
+      : controlRequestJson('/api/mobile-access/remote/control', { method: 'POST', body: JSON.stringify({ running: nextRunning, provider }) }, operationTimeout)
     void operation
       .then(renderRemote, error => {
         remoteFailureText = remoteFailureTextFor(error, 'requestFailed')
@@ -4066,7 +4069,8 @@ function installControl(): { remove: () => void; toggle: () => void; isOpen: () 
       : remoteProvider === 'cloudflared' ? t('reconnectingCloudflared')
         : remoteProvider === 'frp' ? t('reconnectingFrp') : remoteProvider === 'opentunnel' ? t('reconnectingOpentunnel')
           : remoteProvider === 'origin' ? t('reconnectingOrigin') : remoteProvider === 'iroh' ? t('reconnectingIroh') : t('reconnectingTailscale')
-    void controlRequestJson('/api/mobile-access/remote/reconnect', { method: 'POST', body: '{}' })
+    // Reconnecting restarts the tunnel (and may re-provision its certificate).
+    void controlRequestJson('/api/mobile-access/remote/reconnect', { method: 'POST', body: '{}' }, LONG_CONTROL_REQUEST_TIMEOUT_MS)
       .then(renderRemote, error => { remoteFailureText = remoteFailureTextFor(error, 'requestFailed'); remoteStatus.textContent = remoteFailureText })
       .finally(() => {
         remoteReconnectBusy = false
