@@ -604,6 +604,9 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
     on(event: 'webserver/entry-url', listener: (baseUrl: string, entries: readonly unknown[]) => void): unknown
   }
   entryEvent.on('webserver/entry-url', (_baseUrl, entries) => {
+    // A Host that still exposes Connection.authenticatedUrl already supplied the
+    // URL; keep it untouched so a working installation keeps its exact behaviour.
+    if (upstreamLogin.current !== undefined) return
     // Entries are appended in listener order, so a listener running before the
     // Token provider sees an incomplete list. Read now, then once the synchronous
     // dispatch has finished (and again shortly after, for a late provider).
@@ -622,7 +625,7 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
       capture()
       setTimeout(() => {
         capture()
-        if (!captured) logger.warn('DSH advertised no launch-token entry for the upstream origin; remote phone pages fail closed')
+        if (!captured && upstreamLogin.current === undefined) logger.warn('DSH advertised no launch-token entry for the upstream origin; remote phone pages fail closed')
       }, 1_000).unref()
     })
   })
