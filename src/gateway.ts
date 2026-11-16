@@ -1387,6 +1387,12 @@ function extensionContentType(path: string): string {
   return type ?? 'application/octet-stream'
 }
 
+/**
+ * DSH's launch-token URL for its own Web origin, or a holder the plugin fills
+ * once the Host advertises that URL (`webserver/entry-url`).
+ */
+export type UpstreamLoginUrl = string | { current?: string | undefined }
+
 /** Authenticated TLS edge in front of the ordinary loopback-only DSH Web server. */
 export class MobileAccessGateway {
   readonly access: AccessController
@@ -1477,7 +1483,8 @@ export class MobileAccessGateway {
     readonly config: ResolvedGatewayConfig,
     store: DeviceStore,
     private readonly extensions?: MobileAccessService,
-    private readonly upstreamAuthenticatedUrl?: string,
+    /** The DSH launch-token URL, or a holder that DSH fills once it advertises one. */
+    private readonly upstreamAuthenticatedUrl?: UpstreamLoginUrl,
     private readonly extraWebSocketPaths?: { has(pathname: string): boolean },
     private readonly blockedUpgradeLog?: BlockedUpgradePathLog,
     private readonly onDiscoveryDegraded?: (source: 'broadcast' | 'mdns', code: string) => void,
@@ -2793,9 +2800,20 @@ export class MobileAccessGateway {
     await pipeline(result.body, new ByteLimitTransform(4 * 1024 * 1024), response)
   }
 
+  /**
+   * Read the launch-token URL at call time: DSH 0.2.2 no longer exposes
+   * `connection.authenticatedUrl`, so the plugin supplies a holder the WebApp's
+   * `webserver/entry-url` announcement fills after startup.
+   */
+  private resolvedUpstreamLoginUrl(): string | undefined {
+    const source = this.upstreamAuthenticatedUrl
+    if (source === undefined) return undefined
+    return typeof source === 'string' ? source : source.current
+  }
+
   /** Exchange DSH's process-local launch token for an authority-bound cookie kept inside this gateway. */
   private async upstreamCookieHeader(): Promise<string | undefined> {
-    if (this.upstreamAuthenticatedUrl === undefined) return undefined
+    if (this.resolvedUpstreamLoginUrl() === undefined) return undefined
     if (this.upstreamCookie !== undefined
       && this.upstreamCookieExpiresAt > Date.now() + UPSTREAM_AUTH_REFRESH_MARGIN_MS) {
       return this.upstreamCookie
@@ -2817,7 +2835,7 @@ export class MobileAccessGateway {
     let status: number | undefined
     let timedOut = false
     try {
-      const authenticatedUrl = this.upstreamAuthenticatedUrl
+      const authenticatedUrl = this.resolvedUpstreamLoginUrl()
       if (authenticatedUrl === undefined) throw new HttpError(502, 'upstream_unavailable')
       let target: URL
       try {

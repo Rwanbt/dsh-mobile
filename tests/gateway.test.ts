@@ -533,7 +533,7 @@ async function gateway(
   upstreamPort: number,
   overrides: Record<string, unknown> = {},
   testSessionTtlMs?: number,
-  upstreamAuthenticatedUrl?: string,
+  upstreamAuthenticatedUrl?: string | { current?: string | undefined },
   extraWebSocketPaths: readonly string[] = [],
   blockedUpgradeLog?: BlockedUpgradePathLog,
   onDiscoveryDegraded?: (source: 'broadcast' | 'mdns', code: string) => void,
@@ -2134,6 +2134,27 @@ describe('HTTP gateway', () => {
     }
     expect(inner.upgradeObservations).toHaveLength(1)
     expect(inner.upgradeObservations[0]?.cookie).toBe(UPSTREAM_BROWSER_COOKIE)
+  })
+
+  it('exchanges the upstream cookie once a late launch-token URL arrives', async () => {
+    // DSH 0.2.2 fills the URL after startup, so the gateway must read it lazily
+    // instead of capturing undefined at construction.
+    const inner = await upstream('batched', true)
+    const loginSource: { current?: string } = {}
+    const instance = await gateway(inner.port, {}, undefined, loginSource)
+    const paired = await pair(instance)
+    const headers = {
+      ...browserHeaders(instance),
+      accept: 'text/html,application/xhtml+xml',
+      cookie: `${SESSION_COOKIE}=${paired.session}`,
+    }
+    const before = await request(instance.address().port, '/', { headers })
+    expect(before.status).toBe(502)
+    expect(before.body).toContain('upstream_unavailable')
+    loginSource.current = `http://127.0.0.1:${String(inner.port)}/?token=${UPSTREAM_LAUNCH_TOKEN}`
+    const after = await request(instance.address().port, '/', { headers })
+    expect(after.status).toBe(200)
+    expect(inner.observations.some(observation => observation.url?.includes('token='))).toBe(true)
   })
 
   it('distinguishes a navigation bounce from a non-navigation upstream cookie exchange', async () => {

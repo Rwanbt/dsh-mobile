@@ -189,6 +189,31 @@ export function upstreamAuthenticatedUrl(ctx: Context, upstreamOrigin: URL): str
   }
 }
 
+/**
+ * Pick the launch-token URL DSH advertises for its own Web origin.
+ *
+ * DSH 0.2.2 announces entries through `webserver/entry-url` instead of
+ * exposing `connection.authenticatedUrl`; the Token provider pushes the signed
+ * URL this Host's upstream needs. A row for another origin, without a query
+ * string, or carrying credentials is never a login URL for this gateway.
+ * @param entries - advertised entry rows, in provider order.
+ * @param upstreamOrigin - origin the gateway proxies to.
+ * @returns the authenticated URL, or undefined when DSH advertised none.
+ */
+export function entryUpstreamLoginUrl(entries: readonly unknown[], upstreamOrigin: URL): string | undefined {
+  for (const entry of entries) {
+    if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) continue
+    const url = (entry as { readonly url?: unknown }).url
+    if (typeof url !== 'string') continue
+    let parsed: URL
+    try { parsed = new URL(url) } catch { continue }
+    if (parsed.origin !== upstreamOrigin.origin || parsed.pathname !== '/' || parsed.search === '') continue
+    if (parsed.username !== '' || parsed.password !== '' || parsed.hash !== '') continue
+    return parsed.href
+  }
+  return undefined
+}
+
 function installedDshVersion(): string {
   try {
     const manifest = createRequire(import.meta.url)('@deepseek-ai/dsh-host-webserver/package.json') as unknown
@@ -568,12 +593,49 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
   let lanRebindRecoveryRequired = false
   const mobileAccess: MobileAccessService = createMobileAccessService(ctx)
   const baseTemplate = loopbackTemplate(loaded, ctx.webServer.port)
-  const upstreamLoginUrl = upstreamAuthenticatedUrl(ctx, baseTemplate.upstreamOrigin)
-  const adminLogin = upstreamLoginUrl === undefined ? undefined : new URL(upstreamLoginUrl)
-  const supportsRemoteAdminAuthentication = adminLogin !== undefined
-    && adminLogin.origin === baseTemplate.upstreamOrigin.origin && adminLogin.pathname === '/'
-    && adminLogin.username === '' && adminLogin.password === '' && adminLogin.hash === ''
-    && (adminLogin.searchParams.get('token')?.length ?? 0) > 0
+  /**
+   * Launch-token URL the gateway exchanges for its upstream browser cookie.
+   * DSH 0.2.2 removed `connection.authenticatedUrl`; the Token provider now
+   * contributes the signed URL to `webserver/entry-url`, so the value is read
+   * live instead of captured once before that announcement.
+   */
+  const upstreamLogin: { current?: string | undefined } = { current: upstreamAuthenticatedUrl(ctx, baseTemplate.upstreamOrigin) }
+  const entryEvent = ctx as unknown as {
+    on(event: 'webserver/entry-url', listener: (baseUrl: string, entries: readonly unknown[]) => void): unknown
+  }
+  entryEvent.on('webserver/entry-url', (_baseUrl, entries) => {
+    // Entries are appended in listener order, so a listener running before the
+    // Token provider sees an incomplete list. Read now, then once the synchronous
+    // dispatch has finished (and again shortly after, for a late provider).
+    let captured = false
+    const capture = (): void => {
+      if (captured) return
+      const advertised = entryUpstreamLoginUrl(entries, baseTemplate.upstreamOrigin)
+      if (advertised === undefined) return
+      captured = true
+      upstreamLogin.current = advertised
+      // Never log the URL itself: it carries the process launch token.
+      logger.info('upstream launch-token URL captured from DSH entry announcement')
+    }
+    capture()
+    queueMicrotask(() => {
+      capture()
+      setTimeout(() => {
+        capture()
+        if (!captured) logger.warn('DSH advertised no launch-token entry for the upstream origin; remote phone pages fail closed')
+      }, 1_000).unref()
+    })
+  })
+  /** Whether DSH can authenticate this plugin's non-loopback management requests. */
+  const supportsRemoteAdminAuthentication = (): boolean => {
+    const url = upstreamLogin.current
+    if (url === undefined) return false
+    let parsed: URL
+    try { parsed = new URL(url) } catch { return false }
+    return parsed.origin === baseTemplate.upstreamOrigin.origin && parsed.pathname === '/'
+      && parsed.username === '' && parsed.password === '' && parsed.hash === ''
+      && (parsed.searchParams.get('token')?.length ?? 0) > 0
+  }
   const instanceId = await stableInstanceId(loaded, baseTemplate)
   const stateDirectory = dirname(baseTemplate.stateFile)
   const logFile = await installMobileFileLogger(ctx, stateDirectory)
@@ -883,7 +945,7 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
       resolved,
       new JsonDeviceStore(resolved.stateFile, resolved.maxDevices),
       mobileAccess,
-      upstreamLoginUrl,
+      upstreamLogin,
       webSocketPaths,
       blockedUpgradePaths,
       (source, code) => { logger.warn('%s discovery degraded while DSH remains available: %s', source, code) },
@@ -971,7 +1033,7 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
         resolved,
         new JsonDeviceStore(resolved.stateFile, resolved.maxDevices),
         mobileAccess,
-        upstreamLoginUrl,
+        upstreamLogin,
         webSocketPaths,
         blockedUpgradePaths,
         undefined,
@@ -1002,7 +1064,7 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
       resolved,
       new JsonDeviceStore(resolved.stateFile, resolved.maxDevices),
       mobileAccess,
-      upstreamLoginUrl,
+      upstreamLogin,
       webSocketPaths,
       blockedUpgradePaths,
       undefined,
@@ -1033,7 +1095,7 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
       resolved,
       new JsonDeviceStore(resolved.stateFile, resolved.maxDevices),
       mobileAccess,
-      upstreamLoginUrl,
+      upstreamLogin,
       webSocketPaths,
       blockedUpgradePaths,
       undefined,
@@ -1054,7 +1116,7 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
     const resolved = originGatewayConfig(template, settings, remoteDeviceFile, remoteInstanceId, settings.listenPort, instanceId)
     const candidate = new MobileAccessGateway(
       resolved, new JsonDeviceStore(resolved.stateFile, resolved.maxDevices), mobileAccess,
-      upstreamLoginUrl, webSocketPaths, blockedUpgradePaths, undefined, clientModulePreferences,
+      upstreamLogin, webSocketPaths, blockedUpgradePaths, undefined, clientModulePreferences,
       entry => { logger.warn('auth failure %s', JSON.stringify(entry)) },
       entry => { logger.warn('http failure %s', JSON.stringify(entry)) },
       entry => { logger.info('upstream auth %s', JSON.stringify(entry)) },
@@ -1249,15 +1311,21 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
       windowsFirewall: process.platform === 'win32',
     }
   }
-  const diagnosticsPayload = async (request: IncomingMessage): Promise<Record<string, unknown>> => {
+  const diagnosticsPayload = async (request: IncomingMessage, admittedPeer?: object): Promise<Record<string, unknown>> => {
     const connection = (ctx as Context & { readonly connection?: BrowserAuthenticatedConnection }).connection
-    const admission = connection?.admit?.(request)
-    if (admission !== undefined && 'rejection' in admission) throw new HttpError(admission.rejection, 'authentication_failed')
+    // DSH already admitted this request on its WebServer; only an old or
+    // gateway-side caller needs the Connection check here.
+    let peer = admittedPeer
+    if (peer === undefined) {
+      const admission = connection?.admit?.(request)
+      if (admission !== undefined && 'rejection' in admission) throw new HttpError(admission.rejection, 'authentication_failed')
+      peer = admission?.peer
+    }
     const indexCollector: DiagnosticIndexCollector = ctx.webServer
     let indexInjections: readonly { readonly kind: string; readonly text?: string }[] = []
     let indexInspectionUnavailable = false
     if (typeof indexCollector.collectIndexInjections === 'function') {
-      try { indexInjections = indexCollector.collectIndexInjections(admission?.peer) }
+      try { indexInjections = indexCollector.collectIndexInjections(peer) }
       catch (inspectionError) {
         // Optional script observation must not hide other checks or expose another plugin's exception.
         void inspectionError
@@ -1316,16 +1384,40 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
     }, pinnedFrpProbe === undefined ? {} : { remote: pinnedFrpProbe }) as unknown as Record<string, unknown>
   }
 
-  const authenticateDesktopAdmin = (request: IncomingMessage): boolean => {
+  /**
+   * Accept only a request DSH itself admitted for this Host.
+   *
+   * DSH 0.2.2 passes the Peer its WebServer admitted as the handler's third
+   * argument, and replaced Connection's `requestRejection` with `admit`; older
+   * Hosts only offer `requestRejection`, and the gateway-side routes call this
+   * helper with the request alone. Prefer the admitted Peer, then whichever
+   * credential API the Host exposes. Without this, every management write
+   * answered 403 on the newer Host while reads kept working, which made the
+   * Desktop panel look frozen (a provider choice reverted to the saved one).
+   */
+  const desktopManagementAdmitted = (request: IncomingMessage, admittedPeer?: object): boolean => {
+    if (admittedPeer !== undefined) return true
     const connection = (ctx as Context & { readonly connection?: BrowserAuthenticatedConnection }).connection
-    return typeof connection?.requestRejection === 'function'
-      && connection.requestRejection(request) === undefined
+    if (typeof connection?.requestRejection === 'function') {
+      return connection.requestRejection(request) === undefined
+    }
+    if (typeof connection?.admit === 'function') {
+      try {
+        const admission = connection.admit(request)
+        return admission !== undefined && !('rejection' in admission)
+      } catch (error) {
+        // A verifier that throws is not an admission; keep the request refused.
+        logger.warn('desktop management admission failed: %s', error instanceof Error ? error.message : String(error))
+        return false
+      }
+    }
+    return false
   }
 
   const adminRoute: WebRoute = {
     kind: 'prefix',
     path: LOCAL_ADMIN_PREFIX,
-    handler: async (request, response) => {
+    handler: async (request, response, admittedPeer?: object) => {
       try {
         const target = parseRequestTarget(request.url)
         // The destructive notification-key reset keeps its original loopback-only
@@ -1333,8 +1425,8 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
         // administration continues to cover every other management route.
         const pushReset = target.decodedPathname === `${LOCAL_ADMIN_PREFIX}/push/reset`
         assertLocalAdminTrust(request, request.method === 'POST', () => (
-          (isLoopbackAddress(request.socket.remoteAddress ?? '') || supportsRemoteAdminAuthentication)
-          && authenticateDesktopAdmin(request)
+          (isLoopbackAddress(request.socket.remoteAddress ?? '') || supportsRemoteAdminAuthentication())
+          && desktopManagementAdmitted(request, admittedPeer)
         ), pushReset ? [] : baseTemplate.adminAllowedCidrs)
         if (adminClosing) throw new HttpError(503, 'unavailable')
         if (target.search !== '') throw new HttpError(400, 'bad_request')
@@ -1410,7 +1502,7 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
           return
         }
         if (request.method === 'GET' && target.decodedPathname === `${LOCAL_ADMIN_PREFIX}/diagnostics`) {
-          sendJson(response, 200, await diagnosticsPayload(request), false)
+          sendJson(response, 200, await diagnosticsPayload(request, admittedPeer), false)
           return
         }
         if (request.method === 'GET' && target.decodedPathname === `${LOCAL_ADMIN_PREFIX}/release`) {
@@ -1970,20 +2062,24 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
         if (target.decodedPathname.startsWith(`${LOCAL_ADMIN_PREFIX}/remote/`)) {
           const active = remoteController().gateway()
           if (active === undefined) throw new HttpError(409, 'gateway_stopped')
-          await active.localAdminRoute(`${LOCAL_ADMIN_PREFIX}/remote`, authenticateDesktopAdmin).handler(request, response)
+          await active.localAdminRoute(`${LOCAL_ADMIN_PREFIX}/remote`, request => desktopManagementAdmitted(request, admittedPeer)).handler(request, response)
           return
         }
         if (target.decodedPathname.startsWith(`${LOCAL_ADMIN_PREFIX}/lan/`)) {
           const active = lanGateway
           if (active === undefined) throw new HttpError(409, 'gateway_stopped')
-          await active.localAdminRoute(`${LOCAL_ADMIN_PREFIX}/lan`, authenticateDesktopAdmin).handler(request, response)
+          await active.localAdminRoute(`${LOCAL_ADMIN_PREFIX}/lan`, request => desktopManagementAdmitted(request, admittedPeer)).handler(request, response)
           return
         }
         const active = lanGateway
         if (active === undefined) throw new HttpError(409, 'gateway_stopped')
-        await active.localAdminRoute(LOCAL_ADMIN_PREFIX, authenticateDesktopAdmin).handler(request, response)
+        await active.localAdminRoute(LOCAL_ADMIN_PREFIX, request => desktopManagementAdmitted(request, admittedPeer)).handler(request, response)
       } catch (error) {
         const mapped = mapAdminError(error)
+        // The panel shows this refusal, but a Host-side record is what makes
+        // a Desktop-only failure distinguishable from a closed gateway.
+        logger.warn('mobile access admin request failed: %s %s -> %s %s', request.method ?? 'GET',
+          request.url ?? '', String(mapped.status), mapped.code)
         if (response.headersSent) response.destroy()
         else sendFailure(response, mapped.status, mapped.code, false)
       }

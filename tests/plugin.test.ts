@@ -19,7 +19,7 @@ import * as network from '../src/network.js'
 import * as managedSetup from '../src/managed-setup.js'
 import * as lanRebind from '../src/lan-rebind.js'
 import { MobileAccessReconfigurationError } from '../src/control.js'
-import { apply, frpIngressGatewayConfig, inject, originGatewayConfig, remoteGatewayConfig, settleCleanupSteps, upstreamAuthenticatedUrl } from '../src/plugin.js'
+import { apply, entryUpstreamLoginUrl, frpIngressGatewayConfig, inject, originGatewayConfig, remoteGatewayConfig, settleCleanupSteps, upstreamAuthenticatedUrl } from '../src/plugin.js'
 import { parseOriginSettings } from '../src/origin-proxy-config.js'
 import { parseFrpSettings } from '../src/frp-config.js'
 import { ensureFrpIngressCertificate } from '../src/frp-ingress.js'
@@ -57,11 +57,13 @@ async function invoke(
   hostHostname = '127.0.0.1',
   requestHeaders?: Record<string, string>,
   directPeer?: string,
+  /** Peer the newer DSH WebServer already admitted for this request. */
+  admittedPeer?: object,
 ): Promise<{ status: number; body: string }> {
   const server = createServer((request, response) => {
     // Controlled admission fixture; the transport itself remains on loopback.
     if (directPeer !== undefined) Object.defineProperty(request.socket, 'remoteAddress', { value: directPeer })
-    void route.handler(request, response)
+    void (route.handler as (req: IncomingMessage, res: typeof response, peer?: object) => unknown)(request, response, admittedPeer)
   })
   await new Promise<void>(resolve => { server.listen(0, '127.0.0.1', resolve) })
   const port = (server.address() as AddressInfo).port
@@ -123,6 +125,8 @@ async function mount(
   loaderMobileInjection = false,
   waitForPushRuntime = true,
   authenticationUrl?: (base: string) => string,
+  /** DSH 0.2.2+ Connection admission; supplying it omits the removed `requestRejection`. */
+  admit?: (request: IncomingMessage) => { readonly peer: object } | { readonly rejection: 401 | 403 },
 ): Promise<{
   context: Context; route: WebRoute; command: CommandDefinition; upstreamBase: string | undefined; directory: string;
   pushProjectionDisposer: (() => void) | undefined; pushProjectionRegistered: Promise<void>;
@@ -156,7 +160,7 @@ async function mount(
       upstreamBase = baseUrl
       return authenticationUrl === undefined ? `${baseUrl}/?token=test-launch-token` : authenticationUrl(baseUrl)
     },
-    requestRejection,
+    ...(admit === undefined ? { requestRejection } : { admit }),
   } as never)
   let resolvePushProjectionRegistered!: () => void
   const pushProjectionRegistered = new Promise<void>(resolve => { resolvePushProjectionRegistered = resolve })
@@ -613,6 +617,19 @@ describe('upstream browser authentication', () => {
     expect(() => upstreamAuthenticatedUrl(withConnection({
       authenticatedUrl: () => { throw new Error('connection unavailable') },
     }), upstreamOrigin)).toThrow('connection unavailable')
+  })
+
+  it('takes the launch-token URL DSH advertises for its own upstream origin', () => {
+    // DSH 0.2.2 removed connection.authenticatedUrl and announces entries instead.
+    expect(entryUpstreamLoginUrl([
+      { label: 'foreign', url: 'https://foreign.example/?token=not-ours' },
+      { label: 'dsh web', url: 'http://127.0.0.1:3080/?token=launch-token', open: true },
+    ], upstreamOrigin)).toBe('http://127.0.0.1:3080/?token=launch-token')
+    expect(entryUpstreamLoginUrl([], upstreamOrigin)).toBeUndefined()
+    expect(entryUpstreamLoginUrl([{ label: 'bare', url: 'http://127.0.0.1:3080/' }], upstreamOrigin)).toBeUndefined()
+    expect(entryUpstreamLoginUrl([{ label: 'other-port', url: 'http://127.0.0.1:3999/?token=x' }], upstreamOrigin)).toBeUndefined()
+    expect(entryUpstreamLoginUrl([{ label: 'credentials', url: 'http://u:p@127.0.0.1:3080/?token=x' }], upstreamOrigin)).toBeUndefined()
+    expect(entryUpstreamLoginUrl([{ label: 'not-a-url' }, { label: 'bad', url: 'not a url' }], upstreamOrigin)).toBeUndefined()
   })
 })
 
@@ -1297,6 +1314,52 @@ describe('stock DSH lifecycle', () => {
     expect((await invoke(mounted.route, 'GET', path, '', '192.168.50.8', { cookie: 'dsh-session=valid', 'x-forwarded-for': '192.168.50.23' }, '192.168.50.24')).status).toBe(403)
     const defaultMount = await mount(false, 3080, {}, authenticate)
     expect((await invoke(defaultMount.route, 'GET', path, '', '192.168.50.8', { cookie: 'dsh-session=valid' }, '192.168.50.23')).status).toBe(403)
+  })
+
+  it('admits a Desktop management write through the newer Connection admission', async () => {
+    const admit = vi.fn(() => ({ peer: {} }))
+    // DSH 0.2.2 removed requestRejection, so the Host exposes only admit.
+    const mounted = await mount(false, 3080, {}, undefined, [], false, false, false, false, true, undefined, admit)
+    // The Desktop protocol handler strips Origin and Sec-Fetch-Site and keeps only the marker.
+    const desktopMarker = { [DESKTOP_ADMIN_HEADER]: DESKTOP_ADMIN_MARKER }
+    expect((await invoke(mounted.route, 'GET', '/api/mobile-access/remote/control')).status).toBe(200)
+    const selected = await invoke(mounted.route, 'POST', '/api/mobile-access/remote/provider', JSON.stringify({ provider: 'opentunnel' }), '127.0.0.1', desktopMarker)
+    expect(selected.status).toBe(200)
+    expect(JSON.parse(selected.body)).toMatchObject({ provider: 'opentunnel', running: false })
+    expect(admit).toHaveBeenCalled()
+  })
+
+  it('refuses a Desktop management write the newer Connection admission rejects', async () => {
+    const mounted = await mount(false, 3080, {}, undefined, [], false, false, false, false, true, undefined, () => ({ rejection: 403 }))
+    const refused = await invoke(mounted.route, 'POST', '/api/mobile-access/remote/provider', JSON.stringify({ provider: 'opentunnel' }), '127.0.0.1', {
+      [DESKTOP_ADMIN_HEADER]: DESKTOP_ADMIN_MARKER,
+    })
+    expect(refused.status).toBe(403)
+    // Reads keep working, which is why a refused write looks like a reverted choice.
+    expect((await invoke(mounted.route, 'GET', '/api/mobile-access/remote/control')).status).toBe(200)
+  })
+
+  it('trusts the Peer the newer WebServer already admitted for a Desktop write', async () => {
+    // With DSH 0.2.2 the WebServer admits the request and passes its Peer as the
+    // handler's third argument; the plugin must not re-verify it a second time.
+    const mounted = await mount(false, 3080, {}, undefined, [], false, false, false, false, true, undefined, () => ({ rejection: 403 }))
+    const selected = await invoke(mounted.route, 'POST', '/api/mobile-access/remote/provider', JSON.stringify({ provider: 'opentunnel' }), '127.0.0.1', {
+      [DESKTOP_ADMIN_HEADER]: DESKTOP_ADMIN_MARKER,
+    }, undefined, {})
+    expect(selected.status).toBe(200)
+    expect(JSON.parse(selected.body)).toMatchObject({ provider: 'opentunnel', running: false })
+  })
+
+  it('binds the admitted Peer into a Gateway-backed administrator route', async () => {
+    // The pairing/QR route lives on the live Gateway, not on the plugin's exact
+    // handlers, and its own trust check runs inside the same request.
+    const admit = vi.fn(() => ({ rejection: 403 as const }))
+    const mounted = await mount(true, 3080, {}, undefined, [], false, false, false, false, true, undefined, admit)
+    const opened = await invoke(mounted.route, 'POST', '/api/mobile-access/lan/pairing/open', '{}', '127.0.0.1', {
+      [DESKTOP_ADMIN_HEADER]: DESKTOP_ADMIN_MARKER,
+    }, undefined, {})
+    expect(opened.status).toBe(201)
+    expect(JSON.parse(opened.body)).toMatchObject({ token: expect.any(String), appKey: expect.any(String) })
   })
 
   it.each([
